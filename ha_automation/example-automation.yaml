@@ -1,0 +1,37 @@
+alias: "Example Barcode Automation"
+description: "An example automation that demonstrates how to trigger on the HA event fired by the ESPHome barcode scanner, passing the barcode to the python script to lookup the product and if its found adding the product to a HA to-do list. It also posts back the product to the ESPHome device for display on a screen."
+triggers:
+  - trigger: event
+    event_type: esphome.barcode_scan
+conditions: []
+actions:
+  - action: pyscript.barcode_lookup
+    metadata: {}
+    data:
+      barcode: "{{ trigger.event.data.barcode }}"
+    response_variable: product
+    enabled: true
+  - action: text.set_value
+    data:
+      value: >-
+        {% if product.result == 'success' %}{% if product.brand | length >0
+        %}{{product.brand}} {% endif %}{{product.title}} {% elif product.result
+        == "unknown" %}Unknown Product{% else %}Error{% endif %}
+    target:
+      entity_id: text.product
+    enabled: true
+  - alias: If the barcode was found
+    if:
+      - condition: template
+        value_template: "{% if product.result == \"success\" %}true{% endif %}"
+    then:
+      - action: todo.add_item
+        metadata: {}
+        data:
+          item: >-
+            {% if product.result == 'success' %}{% if product.brand | length >0
+            %}{{product.brand}} {% endif %}{{product.title}} {% endif %}
+        target:
+          entity_id: todo.mealie_supermarket
+    enabled: true
+mode: single

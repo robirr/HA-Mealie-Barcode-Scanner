@@ -1,0 +1,109 @@
+#######################################################################################################    
+# ESP32 and GM67 Barcode Scanner
+#######################################################################################################
+
+# IMPORTANT! Replace the hashed values with suitable API keys and passwords
+
+esphome:
+  name: barcode-scanner
+  friendly_name: Barcode Scanner
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "############################################"
+ota:
+  - platform: esphome
+    password: "################################"    
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Barcode Fallback Hotspot"
+    password: "##########"
+
+captive_portal:
+
+#######################################################################################################    
+# CONFIG THE DEVICE
+#######################################################################################################
+
+# UART
+uart:
+  # UART for the GM67 barcode scanner
+  - id: scanner
+    baud_rate: 9600
+    tx_pin: GPIO15
+    rx_pin: GPIO13
+    debug:
+      direction: RX
+      dummy_receiver: true
+      after:
+        delimiter: "\r"
+      sequence:
+        # Trigger an event on the HA even bus and pass the barcode to it. Most reliable way to deal with triggering an automation in HA.
+        - homeassistant.event: 
+            event: esphome.barcode_scan
+            data_template: 
+              barcode: "{{ scanned_barcode }}"
+            variables:
+              scanned_barcode: !lambda |-
+                  std::string str(bytes.begin(), bytes.end()); 
+                  if (strlen(str.c_str())==14) { 
+                    return str.c_str(); 
+                  } else {
+                    return "None";
+                  }  
+        # Update the barcode and last scan. 
+        - lambda: |-
+            UARTDebug::log_string(direction, bytes); 
+            std::string str(bytes.begin(), bytes.end());
+            if (strlen(str.c_str())==14) { 
+              id(barcode).publish_state(str.c_str()); 
+              id(scan).trigger("barcode_scanned"); 
+            }              
+
+# Text Sensor
+text_sensor:
+  # Not needed for automation but useful to see the last scanned barcode in HA
+  - platform: template
+    id: barcode
+    name: Barcode
+    icon: mdi:barcode
+    disabled_by_default: true
+
+# Event
+event:
+  # Not needed for automation but useful to see the last scan time in HA
+  - platform: template
+    name: "Last Scan"
+    id: "scan"
+    icon: mdi:barcode-scan
+    event_types:
+      - "barcode_scanned"
+    disabled_by_default: true
+
+# Text
+text:
+  # Used to pass the product name back from Home Assistant so it can be displayed on the screen
+  - platform: template 
+    name: "Product"
+    id: product
+    icon: mdi:text-search
+    optimistic: true
+    min_length: 0
+    max_length: 100
+    mode: text
+
+#######################################################################################################

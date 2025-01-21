@@ -67,15 +67,9 @@ Assuming you have the GM67 like I do, you can scan the following QR code with th
 
 ![TTL 232 Interface QR Code](assets/images/ttl232_enable.png)
 
-I also chose to change some additional settings on the GM67. By default the scanning lights are always on which can become annoying with it constantly flashing. The mode can be changed to a "Induction" mode in which it instead turns off the lights until a product is detected in front of the scanner. It isn't perfect as it seems to work by detecting the light level changing but its better than the constant flashing. To set inductions mode you can scan the following QR code:
+Other configuration options for the GM67 are available from within Home Assistant once the ESPHome device has been configured.
 
-![Induction Mode QR Code](assets/images/induction_mode.png)
-
-And finally, out of the box, the barcode scanner will scan a barcode every 500ms, including the same barcode. This can cause unintentional duplicate reads of the same barcode if you don't remove it from in front of the scanner quickly enough. Scanning the below QR code will set the scanner to only accept the same barcode after a 3 second delay which helps to mitigate this problem:
-
-![3 Sec Delay QR Code](assets/images/3sec_delay.png)
-
-Having set the above, so far the GM67 has been very accurate and reliable. 
+So far, the GM67 has been very fast, accurate and reliable. 
 
 > [!TIP]
 > The GM67 seems to be good at reading codes from screens also and so you can open this page on your phone to be able to scan the above codes easily. 
@@ -83,13 +77,19 @@ Having set the above, so far the GM67 has been very accurate and reliable.
 #### ESPHome YAML
 An example ESPHome YAML configuration file can be found in this repository under [/esphome/example-esphome-gm67.yaml](esphome/example-esphome-gm67.yaml). Some of the sensors created in the example are disabled in HA by default but can be enabled to help with debugging. 
 
+A number of configuration options for the GM67 are also contained within the example YAML file. These settings can be used to tailor the GM67's behaviour as follows:
+- Buzzer Volume: Sets the volume of the beep emitted when a barcode is scanned.
+- Trigger Mode: Allows you to set the trigger mode which starts the GM67 scanning. The main options are: 
+  - "Continuous Scanning" - which does exactly what it says and sets the GM67 to contiuously attempt to scan a barcode.
+  - "Automatic Induction" - which turns on the scanning only when the light level in front of the scanner changes (e.g. when a product is placed in front) and turns off again after a short duration or if a barcode is scanned. This mode prevents the continuous red and white scanning lights from being on constantly.
+
 > [!TIP]
 > If you have any issues creating the hardware, you can try adding the following to your ESPHome YAML configuration:
 > ```
 > logger:
 >   level: VERBOSE
 > ```
-> This will enable more detailed debug logging which should include all UART messages coming from the barcode scanner.
+> This will enable more detailed debug logging which should include all UART messages coming from the barcode scanner. This can help to prove the ESP and scanner are communicating correctly.
 
 I may add more to the above example over time or add additional examples.
 
@@ -101,9 +101,10 @@ The new device should show up in HA called "barcode-scanner" unless you changed 
 
 Follow the below steps to allow the device to trigger events on the HA event bus:
 1. Open the ESPHome integration page on your Home Assistant instance:
-[![Open your Home Assistant instance and show an integration.](https://my.home-assistant.io/badges/integration.svg)](https://my.home-assistant.io/redirect/integration/?domain=esphome)
+    
+    [![Open your Home Assistant instance and show an integration.](https://my.home-assistant.io/badges/integration.svg)](https://my.home-assistant.io/redirect/integration/?domain=esphome)
 2. Find your barcode scanning device in the device list.
-3. Click the “configure” button next to it.
+3. Click the “CONFIGURE” button next to it.
 4. Check the “Allow the device to perform Home Assistant actions” box.
 5. Then click “submit”.
 
@@ -136,12 +137,16 @@ Instead, we can use the [Pyscript](https://github.com/custom-components/Pyscript
 #### Install the Pyscript Integration in HA
 If you aren't already using Pyscripts for some other purpose then you need to install it. Full instructions for how to install the Pyscript integration can be found on the repository [https://github.com/custom-components/Pyscript](https://github.com/custom-components/Pyscript). 
 
-Pyscript can be easily installed via the Home Assistant Community Store (HACS). Assuming you have HACS installed within your HA instance already, simply search for "Pyscript" within HACS or click on this button [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=pyscript&owner=custom-components), and then install it. 
+Pyscript can be easily installed via the Home Assistant Community Store (HACS). Assuming you have HACS installed within your HA instance already, simply search for "Pyscript" within HACS (or click on the below button), and then install it. 
 
-Once installed, you need to add the integration under the integrations section of Home Assistant. [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=pyscript).
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=pyscript&owner=custom-components)
+
+Once installed, you need to add the integration under the integrations section of Home Assistant. You can do this manually or you can click the below button:
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=pyscript).
 
 > [!IMPORTANT]
-> Make sure to check the option for "Allow All Imports?" when installing Pyscript. If you do not, our python script will not be able to load the needed python modules. Don't worry if you missed it or already have Pyscripts installed, you can check and set this option by going to the Pyscript integration page and clicking on "CONFIGURE".
+> Make sure to check the option for "Allow All Imports?" when adding the Pyscript integration. If you do not, our python script will not be able to load the needed python modules. Don't worry if you missed it or already have Pyscripts installed, you can check and set this option by going to the Pyscript integration page and clicking on "CONFIGURE".
 
 #### Add the python script under Pyscripts
 Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners. Don't worry thought, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. 
@@ -168,20 +173,32 @@ If the Pyscript app has been installed and configured correctly, you should be a
     quantity: ""
     ```
 
-<!-- How to enable logging of info level in home assistant logs for Pyscript for debugging -->
+As you can see, the returned data contains a number of fields from the OpenFoodFacts API witch you can use as conditions in automations. For example, you could use the "result" to only add the product to the shopping list if a successful match is found. Or you could add the product to a different shopping list if the "type" isn't food.
+
+> [!IMPORTANT]
+> Ensure you have the above working and you can call the service and get a success response before moving on.
+
+> [!TIP]
+> If you have issues, you can enable verbose logging for Pyscript by adding the below to your Home Assistant configuration.yaml:
+>   ```
+>   logger:  
+>     custom_components.pyscript: info
+>   ```
+> You should then be able to see detailed logging including any errors in the Home Assistant logs.
 
 ### Home Assistant Automation
 [Coming Soon]
 <!-- Need to change current automation to trigger on the HA event "esphome.scanned_barcode" and upload an example yaml -->
 
 ## Planned Improvements / To Investigate
-- [X] Switch to use openfoodfacts.org instead as seems better populated.
+- [X] Switch to using openfoodfacts.org instead as seems better populated.
 - [ ] If the product isn't found on openfoodfacts.org then try upcdatabase.org instead. Possible other sources of product lookup also.
 - [ ] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
-- [ ] If a product isn't found, HA could send a notification asking for you to input the product name? It can then be added to the cache. Could even send to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
-- [ ] Consider implementing the automation and python as a HA integrations for easier set up. Might be less flexible though.
+- [ ] If a product isn't found, HA could send a notification asking for you to input the product name. It can then be added to the cache. Could even send to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
+- [ ] Consider implementing the automation and python as a HA integration for easier set up. Might be less flexible though.
 - [ ] A screen for feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.
-- [ ] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
+- [X] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
 - [ ] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
-- [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down.
+- [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
+- [ ] Better detecting of a product in front of the scanner using a time of flight sensor.

@@ -72,7 +72,7 @@ Other configuration options for the GM67 are available from within Home Assistan
 So far, the GM67 has been very fast, accurate and reliable. 
 
 > [!TIP]
-> The GM67 seems to be good at reading codes from screens also and so you can open this page on your phone to be able to scan the above codes easily. 
+> The GM67 seems to be good at reading codes from screens also and so you can open this page on your phone to be able to scan the above QR code easily. 
 
 #### ESPHome YAML
 An example ESPHome YAML configuration file can be found in this repository under [/esphome/example-esphome-gm67.yaml](esphome/example-esphome-gm67.yaml). Some of the sensors created in the example are disabled in HA by default but can be enabled to help with debugging. 
@@ -189,8 +189,106 @@ As you can see, the returned data contains a number of fields from the OpenFoodF
 > You should then be able to see detailed logging including any errors in the Home Assistant logs.
 
 ### Home Assistant Automation
-[Coming Soon]
-<!-- Need to change current automation to trigger on the HA event "esphome.scanned_barcode" and upload an example yaml -->
+Home Assistant automations can be used to automate the receiving of barcodes from the scanner, passing them to the python script to be looked up, and adding of the returned product to your chosen To-Do List in Home Assistant. Optionally, the To-Do List can be a shopping list synched between Mealie and Home Assistant using the HA Mealie integration. 
+
+If you don't already have the Mealie integration installed, it is now a core HA integration and can be added straight to Home Assistant. For ease, you can click the below button to add it to your HA instance:
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=mealie)
+
+An example Home Assistant Automation YAML file can be found in this repository under [/ha_automation/example-automation.yaml](ha_automation/example-automation.yaml). You can copy this to your Home Assistant as a new automation and amend as needed.
+
+Below are some more details of the key building blocks in the example automation above. As with any HA automation, the possibilities for what you could do are almost endless. You can use and modify the below building blocks to meet your specific needs.
+
+#### Scanned Barcode Event
+When a barcode is scanned by the device, it triggers an event on the HA event bus. These events are the best and most reliable way to trigger an automation. An event should look something like this:
+```
+event_type: esphome.barcode_scan
+  data:
+    device_id: ee685dc4d9ccb1de6e97a84beb7be650
+    barcode: 4088600550862
+  origin: LOCAL
+  time_fired: "2025-01-20T12:54:21.634458+00:00"
+  context:
+    id: 01JJ1WEGP22MANX2VFREP5B2JV
+    parent_id: null
+    user_id: null
+```
+The event data contains 2 values which can be used in the automation:
+- "device_id" gives the ID of the ESPHome device that sent the scan event. This can be useful if you have more than one barcode scanning device and want to return the scanned value to the correct device or even behave differently depending upon where the event originated from.
+- "barcode" gives the value if the barcode that was scanned. For most product barcodes this is a 13 digit number.
+
+Add a "Manual event" trigger to your automation and set the "Event type" to ```esphome.barcode_scan```. Optionally, to only trigger if the event came a specific device, add ```device_id: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX``` in the "Event data" field changing the XXX's to your device ID .
+                                          
+The data passed in the event can be referenced in templates in any other part of your automation using ```{{ trigger.event.data.barcode }}```
+
+#### Calling the Python script to lookup the barcode
+Add the "Pyscript Python scripting 'Barcode Lookup'" action to your workflow. 
+
+We'll need to use HA templates to pass the barcode and so unfortunately as soon as we add a template to the barcode field it will tell us that it isn't possible to configure it using the visual editor. Instead, we have to use YAML and it should look something like this once configured:
+
+```
+action: pyscript.barcode_lookup
+metadata: {}
+data:
+  barcode: "{{ trigger.event.data.barcode }}"
+response_variable: product
+enabled: true
+```
+
+Note the ```trigger.event.data.barcode``` which gets the barcode passed in the event trigger above. 
+
+Also note the ```response_variable: product``` which provides a variable for the python script to pass data back in. We'll use this variable in any following steps where we want to use information about the product returned from the barcode lookup. The variable will contain a data structure of multiple values. If a matching product was found, it should look something like this:
+
+```
+result: success
+barcode: 5000147030156
+brand: Robinsons
+title: Summer Fruits Squash
+type: food
+quantity: ""
+```
+
+If not match was found, the response data structure will be much simpler:
+
+```
+result: unknown
+barcode: 5000147030156
+```
+
+These returned data structures can be used in HA templates. For example, we can use ```{% if product.result == "success" %}true{% endif %}``` to check whether or not a match was found. Assuming a match was found, we could use ```{{ product.title }}``` to get the name of the product. You can use any other returned value in the same way, changing "title" to the name of the field in the returned data structure.
+
+#### Passing the product back to the ESPHome device
+There are several ways to pass data from Home Assistant to an ESPHome device. The example ESPHome YAML configuration includes one such method, an action which the device registers with HA. This action is called "esphome.barcode_scanner_product_identified" and can be used like any other action in an automation. It accepts a product in the data field. As above, using templates in the "data" field causes us to have to use YAML. 
+
+The below example YAML shows how to pass the returned product name if one is found. If one isn't then "Unknown" is passed instead.
+
+```
+action: esphome.barcode_scanner_product_identified
+metadata: {}
+data:
+  product: >-
+    {% if product.result == 'success' %}
+      {{product.title}} 
+    {% else %}
+      Unknown
+    {% endif %}
+``` 
+
+This text could then be used in ESPHome to display on a screen.
+
+#### Adding the product to a HA To-Do List (including a Mealie shopping list)
+You can use the Home Assistant action "To-do list 'Add item'" to add an item to any To-Do list. You simply provide an entity ID for the To-Do list you wish to add it to and an item name. Yet again, using templates forces us to use YAML which should look something like this:
+
+```
+action: todo.add_item
+metadata: {}
+data:
+  item: "{{ product.title }}"
+target:
+  entity_id: todo.mealie_supermarket
+```
+> [!TIP]
+> One benefit of Mealie Shopping lists synched with Home assistant is in their handling of duplicate entries. In normal Home Assistant To-Do lists, if the same product is added to the list twice or more, it will appear as multiple entries in the list (i.e. "Product 123" would appear in the list twice). In a Mealie synched shopping list, Mealie merges duplicate entries, adding a number to the front of them do indicate how many of them are required (i.e. adding "Product 123" three times would be displayed as a single entry of "3 Product 123").
 
 ## Planned Improvements / To Investigate
 - [X] Switch to using openfoodfacts.org instead as seems better populated.
@@ -204,3 +302,4 @@ As you can see, the returned data contains a number of fields from the OpenFoodF
 - [ ] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
 - [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
 - [ ] Better detecting of a product in front of the scanner using a time of flight sensor.
+- [ ] Consider a custom PCB to make a more productionised product. Or an alternative hand-held version.

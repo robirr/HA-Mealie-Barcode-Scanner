@@ -160,7 +160,7 @@ select:
             - uart.write: 
                 id: scanner
                 data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8A, 0x08, 0xFE, 0x95]
-  # Buzzer Pitch
+  # Buzzer Volume
   - platform: template
     name: "Buzzer Volume"
     id: buzzer_volume
@@ -168,30 +168,213 @@ select:
     icon: mdi:volume-high
     entity_category: CONFIG
     options:
+      - 'Off'
       - Low
       - Medium
       - High
     initial_option: Medium
     restore_value: true
     on_value:
+      - if: # Off
+          condition:
+            lambda: 'if (x == "Off") { return true; } else { return false; }'
+          then:
+            - uart.write: # Turn off
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x38, 0x00, 0xFE, 0xEF]
       - if: # Low
           condition:
             lambda: 'if (x == "Low") { return true; } else { return false; }'
           then:
-            - uart.write: 
+            - uart.write: # Turn on
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x38, 0x01, 0xFE, 0xEE] 
+            - uart.write: # Set low
                 id: scanner
                 data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8C, 0x02, 0xFE, 0x99]
       - if: # Medium
           condition:
             lambda: 'if (x == "Medium") { return true; } else { return false; }'
           then:
-            - uart.write: 
+            - uart.write: # Turn on
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x38, 0x01, 0xFE, 0xE]
+            - uart.write: # Set medium
                 id: scanner
                 data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8C, 0x01, 0xFE, 0x9A]
       - if: # High
           condition:
             lambda: 'if (x == "High") { return true; } else { return false; }'
           then:
-            - uart.write: 
+            - uart.write: # Turn on
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x38, 0x01, 0xFE, 0xE]
+            - uart.write: # Set high
                 id: scanner
                 data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8C, 0x00, 0xFE, 0x9B]
+
+  # Scanning Light
+  - platform: template
+    name: "Scanning Light"
+    id: scanning_light
+    optimistic: true
+    icon: mdi:lightbulb-on
+    entity_category: CONFIG
+    options:
+      - On When Reading
+      - Always On
+      - Always Off
+    initial_option: On When Reading
+    restore_value: true
+    on_value:
+      - if: # On When Reading
+          condition:
+            lambda: 'if (x == "On When Reading") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0x02, 0x00, 0xFE, 0x32]
+      - if: # Always On
+          condition:
+            lambda: 'if (x == "Always On") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0x02, 0x01, 0xFE, 0x31]
+      - if: # Always Off
+          condition:
+            lambda: 'if (x == "Always Off") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0x02, 0x02, 0xFE, 0x30]
+  # Collimation
+  - platform: template
+    name: "Collimation"
+    id: collimation
+    optimistic: true
+    icon: mdi:line-scan
+    entity_category: CONFIG
+    options:
+      - On When Reading
+      - Always On
+      - Always Off
+    initial_option: On When Reading
+    restore_value: true
+    on_value:
+      - if: # On When Reading
+          condition:
+            lambda: 'if (x == "On When Reading") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0x03, 0x00, 0xFE, 0x31]
+      - if: # Always On
+          condition:
+            lambda: 'if (x == "Always On") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0x03, 0x01, 0xFE, 0x30]
+      - if: # Always Off
+          condition:
+            lambda: 'if (x == "Always Off") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0x03, 0x02, 0xFE, 0x2F]
+  # Same Code Delay
+  - platform: template
+    name: "Same Code Delay"
+    id: same_code_delay
+    optimistic: true
+    icon: mdi:barcode-scan
+    entity_category: CONFIG
+    options:
+      - 0.5s
+      - 1s
+      - 3s
+      - 5s
+      - 7s 
+      - No Repeat
+    initial_option: 3s
+    restore_value: true
+    on_value:
+      - if: # 0.5s
+          condition:
+            lambda: 'if (x == "0.5s") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF3, 0x03, 0x05, 0xFE, 0x2B]
+      - if: # 1s
+          condition:
+            lambda: 'if (x == "1s") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0xC9, 0x01, 0xFD, 0x6A]
+      - if: # 3s
+          condition:
+            lambda: 'if (x == "3s") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0xC9, 0x03, 0xFD, 0x68]
+      - if: # 5s
+          condition:
+            lambda: 'if (x == "5s") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0xC9, 0x05, 0xFD, 0x66]
+      - if: # 7s
+          condition:
+            lambda: 'if (x == "7s") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0xC9, 0x07, 0xFD, 0x64]
+      - if: # No Repeat
+          condition:
+            lambda: 'if (x == "No Repeat") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0xC9, 0x09, 0xFD, 0x62]
+
+switch:  
+  # Collimation Flashing
+  - platform: template
+    name: "Collimation Flashing"
+    id: collimation_flashing
+    optimistic: true
+    icon: mdi:line-scan
+    entity_category: CONFIG
+    restore_mode : RESTORE_DEFAULT_ON 
+    turn_on_action:
+      - uart.write: 
+          id: scanner
+          data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0xB8, 0x00, 0xFD, 0x7C]
+    turn_off_action:
+      - uart.write: 
+          id: scanner
+          data: [0x08, 0xC6, 0x04, 0x08, 0x00, 0xF2, 0xB8, 0x01, 0xFD, 0x7B]
+  # Scanning Enabled
+  - platform: template
+    name: "Scanning Enabled"
+    id: scanning_enable
+    optimistic: true
+    icon: mdi:barcode-off
+    entity_category: CONFIG
+    restore_mode : RESTORE_DEFAULT_ON 
+    turn_on_action:
+      - uart.write: 
+          id: scanner
+          data: [0x04, 0xE9, 0x04, 0x00, 0xFF, 0x0F]
+    turn_off_action:
+      - uart.write: 
+          id: scanner
+          data: [0x04, 0xEA, 0x04, 0x00, 0xFF, 0x0E]
+
+#######################################################################################################

@@ -83,6 +83,8 @@ A number of configuration options for the GM67 are also contained within the exa
   - "Continuous Scanning" - which does exactly what it says and sets the GM67 to contiuously attempt to scan a barcode.
   - "Automatic Induction" - which turns on the scanning only when the light level in front of the scanner changes (e.g. when a product is placed in front) and turns off again after a short duration or if a barcode is scanned. This mode prevents the continuous red and white scanning lights from being on constantly.
 
+<!-- Add all the configuration options in the example ESPHome file and describe the settings -->
+
 > [!TIP]
 > If you have any issues creating the hardware, you can try adding the following to your ESPHome YAML configuration:
 > ```

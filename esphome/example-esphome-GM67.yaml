@@ -20,6 +20,17 @@ logger:
 api:
   encryption:
     key: "############################################"
+  actions:
+    # For now, when a product is identified it just logs it to the debug stream but this can be adapted to write to product to a screen
+    - action: product_identified
+      variables:
+        product: string
+      then:
+        - logger.log: 
+            level: INFO
+            format: "Returned Product: %s"
+            args: [ 'product.c_str()' ] 
+  
 ota:
   - platform: esphome
     password: "################################"    
@@ -44,16 +55,24 @@ uart:
   # UART for the GM67 barcode scanner
   - id: scanner
     baud_rate: 9600
-    tx_pin: GPIO15
-    rx_pin: GPIO13
+    tx_pin: ${tx_pin}
+    rx_pin: ${rx_pin}
     debug:
       direction: RX
       dummy_receiver: true
       after:
         delimiter: "\r"
       sequence:
-        # Trigger an event on the HA even bus and pass the barcode to it. Most reliable way to deal with triggering an automation in HA.
-        - homeassistant.event: 
+        # Update the last barcode and scan event
+        - lambda: |-
+            UARTDebug::log_string(direction, bytes);
+            std::string str(bytes.begin(), bytes.end());
+            if (strlen(str.c_str())==14) { 
+              id(last_barcode).publish_state(str.c_str()); 
+              id(last_scan).trigger("barcode_scanned"); 
+            }
+        # Send a HA event with the scanned barcode
+        - homeassistant.event:
             event: esphome.barcode_scan
             data_template: 
               barcode: "{{ scanned_barcode }}"
@@ -64,46 +83,115 @@ uart:
                     return str.c_str(); 
                   } else {
                     return "None";
-                  }  
-        # Update the barcode and last scan. 
-        - lambda: |-
-            UARTDebug::log_string(direction, bytes); 
-            std::string str(bytes.begin(), bytes.end());
-            if (strlen(str.c_str())==14) { 
-              id(barcode).publish_state(str.c_str()); 
-              id(scan).trigger("barcode_scanned"); 
-            }              
+                  }                
 
 # Text Sensor
 text_sensor:
-  # Not needed for automation but useful to see the last scanned barcode in HA
+  # # Provided for diagnostic purposes only. You should use the HA event "esphome.barcode_scan" triggered when a scan is performed
   - platform: template
-    id: barcode
-    name: Barcode
+    id: last_barcode
+    name: Last Barcode
     icon: mdi:barcode
+    entity_category: DIAGNOSTIC
     disabled_by_default: true
 
 # Event
 event:
-  # Not needed for automation but useful to see the last scan time in HA
+  # Provided for diagnostic purposes only. You should use the HA event "esphome.barcode_scan" triggered when a scan is performed
   - platform: template
     name: "Last Scan"
-    id: "scan"
+    id: "last_scan"
     icon: mdi:barcode-scan
+    entity_category: DIAGNOSTIC
+    disabled_by_default: true
     event_types:
       - "barcode_scanned"
-    disabled_by_default: true
 
-# Text
-text:
-  # Used to pass the product name back from Home Assistant so it can be displayed on the screen
-  - platform: template 
-    name: "Product"
-    id: product
-    icon: mdi:text-search
+# Select
+select:
+  # The scanning trigger mode of the GM67
+  - platform: template
+    name: "Trigger Mode"
+    id: scan_mode
     optimistic: true
-    min_length: 0
-    max_length: 100
-    mode: text
-
-#######################################################################################################
+    icon: mdi:auto-mode
+    entity_category: CONFIG
+    options:
+      - Button Holding
+      - Button Trigger
+      - Continuous scanning
+      - Automatic Induction
+      - Host
+    initial_option: Continuous scanning
+    restore_value: true
+    on_value:
+      - if:
+          condition:
+            lambda: 'if (x == "Button Holding") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8A, 0x00, 0xFE, 0x9D]
+      - if:
+          condition:
+            lambda: 'if (x == "Button Trigger") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8A, 0x02, 0xFE, 0x9B]
+      - if:
+          condition:
+            lambda: 'if (x == "Continuous scanning") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8A, 0x04, 0xFE, 0x99]
+      - if:
+          condition:
+            lambda: 'if (x == "Automatic Induction") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8A, 0x09, 0xFE, 0x94]
+      - if:
+          condition:
+            lambda: 'if (x == "Host") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8A, 0x08, 0xFE, 0x95]
+  # Buzzer Pitch
+  - platform: template
+    name: "Buzzer Volume"
+    id: buzzer_volume
+    optimistic: true
+    icon: mdi:volume-high
+    entity_category: CONFIG
+    options:
+      - Low
+      - Medium
+      - High
+    initial_option: Medium
+    restore_value: true
+    on_value:
+      - if: # Low
+          condition:
+            lambda: 'if (x == "Low") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8C, 0x02, 0xFE, 0x99]
+      - if: # Medium
+          condition:
+            lambda: 'if (x == "Medium") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8C, 0x01, 0xFE, 0x9A]
+      - if: # High
+          condition:
+            lambda: 'if (x == "High") { return true; } else { return false; }'
+          then:
+            - uart.write: 
+                id: scanner
+                data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8C, 0x00, 0xFE, 0x9B]

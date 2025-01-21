@@ -11,15 +11,13 @@ actions:
       barcode: "{{ trigger.event.data.barcode }}"
     response_variable: product
     enabled: true
-  - action: text.set_value
+  - action: esphome.barcode_scanner_product_identified
+    metadata: {}
     data:
-      value: >-
-        {% if product.result == 'success' %}{% if product.brand | length >0
-        %}{{product.brand}} {% endif %}{{product.title}} {% elif product.result
-        == "unknown" %}Unknown Product{% else %}Error{% endif %}
-    target:
-      entity_id: text.product
-    enabled: true
+      product: >-
+        {% if product.result == 'success' %}{% if product.brand | length >0    
+        %}{{product.brand}} {% endif %}{{product.title}} {% else %}Unknown{%
+        endif %}
   - alias: If the barcode was found
     if:
       - condition: template
@@ -30,7 +28,7 @@ actions:
         data:
           item: >-
             {% if product.result == 'success' %}{% if product.brand | length >0
-            %}{{product.brand}} {% endif %}{{product.title}} {% endif %}
+            %}{{product.brand}} {% endif %}{{product.title}}{% endif %}
         target:
           entity_id: todo.mealie_supermarket
     enabled: true

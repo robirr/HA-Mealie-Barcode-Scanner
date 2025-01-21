@@ -77,11 +77,20 @@ So far, the GM67 has been very fast, accurate and reliable.
 #### ESPHome YAML
 An example ESPHome YAML configuration file can be found in this repository under [/esphome/example-esphome-gm67.yaml](esphome/example-esphome-gm67.yaml). Some of the sensors created in the example are disabled in HA by default but can be enabled to help with debugging. 
 
-A number of configuration options for the GM67 are also contained within the example YAML file. These settings can be used to tailor the GM67's behaviour as follows:
-- Buzzer Volume: Sets the volume of the beep emitted when a barcode is scanned.
-- Trigger Mode: Allows you to set the trigger mode which starts the GM67 scanning. The main options are: 
-  - "Continuous Scanning" - which does exactly what it says and sets the GM67 to contiuously attempt to scan a barcode.
+A number of configuration options for the GM67 are also contained within the example YAML file. These settings can be used to tailor the GM67's behaviour and can be set from within Home Assistant. The available config options are as follows:
+- Buzzer Volume: Sets the volume of the beep emitted when a barcode is scanned. Can also be used to turn off the buzzer.
+- Trigger Mode: Allows you to set the trigger mode which starts the GM67 scanning. The available options are: 
+  - "Button Holding" - which requires you to hold the button on the device in order to scan a barcode.
+  - "Button Trigger" - starts the device scanning after a short press of the button. 
+  - "Continuous Scanning" - which does exactly what it says and sets the GM67 to continuously attempt to scan a barcode.
   - "Automatic Induction" - which turns on the scanning only when the light level in front of the scanner changes (e.g. when a product is placed in front) and turns off again after a short duration or if a barcode is scanned. This mode prevents the continuous red and white scanning lights from being on constantly.
+  - "Host" - which sets the GM67 to only operate when instructed to do so from the host device via UART/TTL commands.
+- Scanning Light: Allows you to set the white scanning light to always off, always on, or on only when the device is trying to scan.
+- Collimation: These are the red scanning lines emitted by the scanner which help to line up a barcode to be scanned. Like the scanning light, they can be set to always on, always off, or on only when the device is trying to scan.
+- Collimation Flashing: Allows you to turn on or off the flashing of the Collimation lines. 
+- Same Code Delay: Allows you to set the delay between the device allowing you to scan the same barcode. This can help to prevent accidental duplicate scans. It can be set from between half a second to 7 seconds or can disallow duplicate scans which prevents the same barcode being scanned twice in a row.
+- Scanning Enabled: Allows you to disable or enable the scanner as needed. If disabled, barcodes cannot be scanned. This can be useful as a child lock to prevent children scanning barcodes. Or it can be used to disable the scanner at night so it doesn't shine the scanning or collimation lights.
+
 
 <!-- Add all the configuration options in the example ESPHome file and describe the settings -->
 
@@ -214,8 +223,8 @@ event_type: esphome.barcode_scan
     user_id: null
 ```
 The event data contains 2 values which can be used in the automation:
-- "device_id" gives the ID of the ESPHome device that sent the scan event. This can be useful if you have more than one barcode scanning device and want to return the scanned value to the correct device or even behave differently depending upon where the event originated from.
-- "barcode" gives the value if the barcode that was scanned. For most product barcodes this is a 13 digit number.
+- ```device_id``` gives the ID of the ESPHome device that sent the scan event. This can be useful if you have more than one barcode scanning device and want to return the scanned value to the correct device or even behave differently depending upon where the event originated from.
+- ```barcode``` gives the value if the barcode that was scanned. For most product barcodes this is a 13 digit number.
 
 Add a "Manual event" trigger to your automation and set the "Event type" to ```esphome.barcode_scan```. Optionally, to only trigger if the event came a specific device, add ```device_id: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX``` in the "Event data" field changing the XXX's to your device ID .
                                           
@@ -248,17 +257,22 @@ type: food
 quantity: ""
 ```
 
-If not match was found, the response data structure will be much simpler:
+If no match was found, the response data structure will be much simpler:
 
 ```
 result: unknown
 barcode: 5000147030156
 ```
 
-These returned data structures can be used in HA templates. For example, we can use ```{% if product.result == "success" %}true{% endif %}``` to check whether or not a match was found. Assuming a match was found, we could use ```{{ product.title }}``` to get the name of the product. You can use any other returned value in the same way, changing "title" to the name of the field in the returned data structure.
+These returned data structures can be used in HA templates. For example, we can use ```{% if product.result == "success" %}true{% endif %}``` to check whether or not a match was found. Assuming a match was found, we could use ```{{ product.title }}``` to get the name of the product. 
+
+> [!TIP]
+> You can use any other returned value in a similar way, changing "title" in ```{{ product.title }}``` to the name of the field in the returned data structure. (e.g. ```{{ product.brand }}```)
 
 #### Passing the product back to the ESPHome device
-There are several ways to pass data from Home Assistant to an ESPHome device. The example ESPHome YAML configuration includes one such method, an action which the device registers with HA. This action is called "esphome.barcode_scanner_product_identified" and can be used like any other action in an automation. It accepts a product in the data field. As above, using templates in the "data" field causes us to have to use YAML. 
+There are several ways to pass data from Home Assistant to an ESPHome device. The example ESPHome YAML configuration includes one such method, an action which the device registers with HA. 
+
+This action is called "ESPHome 'esphome.barcode_scanner_product_identified'" and can be used like any other action in an automation. It accepts a product in the data field. As above, using templates in the "data" field causes us to have to use YAML. 
 
 The below example YAML shows how to pass the returned product name if one is found. If one isn't then "Unknown" is passed instead.
 
@@ -291,6 +305,7 @@ target:
 > One benefit of Mealie Shopping lists synched with Home assistant is in their handling of duplicate entries. In normal Home Assistant To-Do lists, if the same product is added to the list twice or more, it will appear as multiple entries in the list (i.e. "Product 123" would appear in the list twice). In a Mealie synched shopping list, Mealie merges duplicate entries, adding a number to the front of them do indicate how many of them are required (i.e. adding "Product 123" three times would be displayed as a single entry of "3 Product 123").
 
 ## Planned Improvements / To Investigate
+This is just a brain dump of ideas for improving the proof of concept or to investigate further. If you have other ideas or suggestions, please raise an [Issue](/MattFryer/HA-Mealie-Barcode-Scanner/issues) and I'll add them.
 - [X] Switch to using openfoodfacts.org instead as seems better populated.
 - [ ] If the product isn't found on openfoodfacts.org then try upcdatabase.org instead. Possible other sources of product lookup also.
 - [ ] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
@@ -303,3 +318,4 @@ target:
 - [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
 - [ ] Better detecting of a product in front of the scanner using a time of flight sensor.
 - [ ] Consider a custom PCB to make a more productionised product. Or an alternative hand-held version.
+- [ ] Consider splitting the readme into separate Wiki pages instead.

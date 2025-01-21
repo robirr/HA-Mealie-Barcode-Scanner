@@ -119,10 +119,10 @@ select:
     options:
       - Button Holding
       - Button Trigger
-      - Continuous scanning
+      - Continuous Scanning
       - Automatic Induction
       - Host
-    initial_option: Continuous scanning
+    initial_option: Continuous Scanning
     restore_value: true
     on_value:
       - if:
@@ -141,7 +141,7 @@ select:
                 data: [0x07, 0xC6, 0x04, 0x08, 0x00, 0x8A, 0x02, 0xFE, 0x9B]
       - if:
           condition:
-            lambda: 'if (x == "Continuous scanning") { return true; } else { return false; }'
+            lambda: 'if (x == "Continuous Scanning") { return true; } else { return false; }'
           then:
             - uart.write: 
                 id: scanner

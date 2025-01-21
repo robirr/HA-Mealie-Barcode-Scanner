@@ -1,4 +1,17 @@
 # Home Assistant (and Mealie) Barcode Scanner and Product Lookup
+
+[![GitHub license](https://img.shields.io/github/license/MattFryer/HA-Mealie-Barcode-Scanner.svg?logo=gnu&logoColor=ffffff)](https://github.com/MattFryer/HA-Mealie-Barcode-Scanner/blob/master/LICENSE)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/t/MattFryer/HA-Mealie-Barcode-Scanner)
+![GitHub contributors](https://img.shields.io/github/contributors/MattFryer/HA-Mealie-Barcode-Scanner)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/MattFryer/HA-Mealie-Barcode-Scanner)
+![GitHub Repo stars](https://img.shields.io/github/stars/MattFryer/HA-Mealie-Barcode-Scanner)
+![GitHub forks](https://img.shields.io/github/forks/MattFryer/HA-Mealie-Barcode-Scanner)
+![GitHub watchers](https://img.shields.io/github/watchers/MattFryer/HA-Mealie-Barcode-Scanner)
+
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/mattfryer)
+![GitHub Sponsor](https://img.shields.io/github/sponsors/MattFryer?label=Sponsor&logo=GitHub)
+
 Being big users of both Home Assistant and Mealie, for a while I've looked for a solution to add items quickly to our Mealie shopping list by scanning the product barcode. I’ve seen lots of questions about the same idea on the HA community and Reddit, but haven’t seen any great solutions. So I set about making my own solution. The code for which and my notes as I develop the solution can be found in this repository.
 
 > [!IMPORTANT]
@@ -38,12 +51,12 @@ We need to wire the GM67 to the ESP board. Which pins on the ESP board you choos
 > [!CAUTION]
 > The wiring colours of the cable provided with the GM67 are not standard. Care should be taken to ensure the correct wiring in order to not damage either the GM67 or the ESP board. Do not rely on the wiring colours as the cable provided may not be the same as the one I received.
 
-| ESP Board Pin  | GM67 Board UART/TTL Pin | Supplied Wire Colour |
-| -------------- | ----------------------- | -------------------- |
-| GND            | GND                     | Green                |
-| RX             | GPIO13                  | Yellow               |
-| TX             | GPIO15                  | Black                |
-| 5V             | 5V                      | Red                  |
+| GM67 Board UART/TTL Pin | ESP Board Pin | Supplied Wire Colour |
+| ----------------------- | ------------- | -------------------- |
+| GND                     | GND           | Green                |
+| RX                      | GPIO13        | Yellow               |
+| TX                      | GPIO15        | Black                |
+| 5V                      | 5V            | Red                  |
 
 The cable provided for UART/TTL with the GM67 had bare wires to which I added Dupont connectors to make it simple to connect to the ESP board. You can connect however you wish (e.g. soldering). 
 
@@ -118,29 +131,54 @@ You can now check the device is working and connected to Home Assistant correctl
 ### Product Lookup
 A custom python script is used to look up a passed product barcode on the [openfoodfacts.org](https://openfoodfacts.org/) website and return the name of the product. Home Assistant can run custom python scripts directly but additional python libraries can't be important which limits what can be done with them.
 
-Instead, we can use the [Pyscript(https://github.com/custom-components/Pyscript)] integration which is available under HACS to run our python script instead.  
+Instead, we can use the [Pyscript](https://github.com/custom-components/Pyscript) integration to run out python script. 
 
 #### Install the Pyscript Integration in HA
 If you aren't already using Pyscripts for some other purpose then you need to install it. Full instructions for how to install the Pyscript integration can be found on the repository [https://github.com/custom-components/Pyscript](https://github.com/custom-components/Pyscript). 
 
-Assuming you have HACS installed within your HA instance, simply search for "Pyscript" within HACS or click on this button [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=pyscript&owner=custom-components), and then install it. 
+Pyscript can be easily installed via the Home Assistant Community Store (HACS). Assuming you have HACS installed within your HA instance already, simply search for "Pyscript" within HACS or click on this button [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=pyscript&owner=custom-components), and then install it. 
 
 Once installed, you need to add the integration under the integrations section of Home Assistant. [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=pyscript).
 
 > [!IMPORTANT]
-> Make sure to check the option for "Allow All Imports?" when installing Pyscript. If you do not, our python script will not be able to load the needed python modules. Don't worry if you missed it or already have Pyscripts installed, you can set this option by going to the Pyscript integration page and clicking on "CONFIGURE".
+> Make sure to check the option for "Allow All Imports?" when installing Pyscript. If you do not, our python script will not be able to load the needed python modules. Don't worry if you missed it or already have Pyscripts installed, you can check and set this option by going to the Pyscript integration page and clicking on "CONFIGURE".
 
 #### Add the python script under Pyscripts
-[Coming Soon]
-<!-- Add the python script under the Pyscripts folder and check the service can be called. Folders need to be created. Also need to update/create the Pyscripts config.yaml file. -->
+Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners. Don't worry thought, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. 
+
+If you already had Pyscript installed and running other python scripts, you should hopefully already understand the basics of how Pyscript is configured. You will need to copy the "pyscript/apps/barcode_lookup" folder and its contents from this repository under your existing "pyscript/apps" folder (or create one) in your Home Assistant config folder. You will also need to amend your "pyscript/config.yaml" file to include the definition and settings for this new Pyscript app. You can copy them from the ["pyscript/config.yaml"](pyscript/config.yaml) file in this repository.
+
+> [!TIP]
+> Pyscript should pick up the new script automatically but to be sure it is best to restart Home Assistant to make sure everything is reloaded.
+
+The Pyscript app configuration contains the base path to use for the OpenFoodFacts.org API. This is so that it is easy to amend in the future if needed without having to modify the python script (i.e. if they move from v2 to v3 of their API).
+
+If the Pyscript app has been installed and configured correctly, you should be able to test calling the created service from within Home Assistant:
+1. Navigate to Developer Tools -> Actions
+2. Find and select the "Pyscript Python scripting: Barcode Lookup" action.
+3. Click the "FILL EXAMPLE DATA" link from under the "All available parameters" section which should configure the action with the barcode "5000147030156".
+4. Click on "PERFORM ACTION"
+5. If all is configured and working properly you should see a returned response which looks like this:
+    ```
+    result: success
+    barcode: 5000147030156
+    brand: Robinsons
+    title: Summer Fruits Squash
+    type: food
+    quantity: ""
+    ```
+
+<!-- How to enable logging of info level in home assistant logs for Pyscript for debugging -->
 
 ### Home Assistant Automation
 [Coming Soon]
-<!-- Need to change current automation to use the HA event esphome.scanned_barcode and upload an example yaml -->
+<!-- Need to change current automation to trigger on the HA event "esphome.scanned_barcode" and upload an example yaml -->
 
 ## Planned Improvements / To Investigate
-- [ ] Implement lookup on openfoodfacts.org (seems to be the most populated and clean), then if no match found try upcdatabase.org instead. Possible other sources of product lookup.
+- [X] Switch to use openfoodfacts.org instead as seems better populated.
+- [ ] If the product isn't found on openfoodfacts.org then try upcdatabase.org instead. Possible other sources of product lookup also.
 - [ ] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
+- [ ] If a product isn't found, HA could send a notification asking for you to input the product name? It can then be added to the cache. Could even send to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
 - [ ] Consider implementing the automation and python as a HA integrations for easier set up. Might be less flexible though.
 - [ ] A screen for feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.

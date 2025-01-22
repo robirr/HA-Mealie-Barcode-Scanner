@@ -8,17 +8,21 @@
 ![GitHub forks](https://img.shields.io/github/forks/MattFryer/HA-Mealie-Barcode-Scanner)
 ![GitHub watchers](https://img.shields.io/github/watchers/MattFryer/HA-Mealie-Barcode-Scanner)
 
-
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/mattfryer)
-![GitHub Sponsor](https://img.shields.io/github/sponsors/MattFryer?label=Sponsor&logo=GitHub)
-
-Being big users of both Home Assistant and Mealie, for a while I've looked for a solution to add items quickly to our Mealie shopping list by scanning the product barcode. I’ve seen lots of questions about the same idea on the HA community and Reddit, but haven’t seen any great solutions. So I set about making my own solution. The code for which and my notes as I develop the solution can be found in this repository.
+Being big users of both Home Assistant and Mealie, for a while I've looked for a solution to add items quickly to our Mealie shopping list by scanning the product barcode. I’ve seen lots of questions about the same idea on the HA community and Reddit, but haven’t seen any great solutions. So I set about making my own solution. The code for which and my notes as I develop the hardware and software can be found in this repository.
 
 > [!IMPORTANT]
 > This project is a work in progress and is currently no more than a Proof Of Concept (PoC). Therefore it is subject to change and the code and examples in this repository may not work. The below is not an exhaustive walkthrough and so a reasonable understanding of Home Assistant and ESPHome will be needed to successfully follow and implement.
 
 > [!WARNING]
 > No warranties or guarantees are made regarding the contents of this repository. Anyone using the code or instructions does so at their own risk!
+
+## Contributing
+If you'd like to help or contribute to this project, feel free to get in touch with ideas or suggestions using the [Discussions](MattFryer/HA-Mealie-Barcode-Scanner/discussions) section. Or contribute by sending pull requests.
+
+If you just want to show your appreciation, you can sponsor the project or send a one of donation using the links below:
+
+[<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" height="37px" style="margin: 5px"/>](https://buymeacoffee.com/cereal2nd)
+[<img src="assets/images/github-sponsors-button.svg" height="37px" style="margin: 5px"/>](https://github.com/sponsors/MattFryer)
 
 ## The Idea
 The main idea is to have a way to scan a product barcode whilst preparing a meal in the kitchen and have that item added to the weekly supermarket shopping list. To ensure it is used by the whole family, it needs to be fast and simple to scan a barcode whilst preparing a meal. Ideally it will use a device mounted in the kitchen so that it doesn't require a mobile phone to work. 
@@ -89,10 +93,10 @@ A number of configuration options for the GM67 are also contained within the exa
 - Collimation: These are the red scanning lines emitted by the scanner which help to line up a barcode to be scanned. Like the scanning light, they can be set to always on, always off, or on only when the device is trying to scan.
 - Collimation Flashing: Allows you to turn on or off the flashing of the Collimation lines. 
 - Same Code Delay: Allows you to set the delay between the device allowing you to scan the same barcode. This can help to prevent accidental duplicate scans. It can be set from between half a second to 7 seconds or can disallow duplicate scans which prevents the same barcode being scanned twice in a row.
-- Scanning Enabled: Allows you to disable or enable the scanner as needed. If disabled, barcodes cannot be scanned. This can be useful as a child lock to prevent children scanning barcodes. Or it can be used to disable the scanner at night so it doesn't shine the scanning or collimation lights.
+- Scanning Enabled: Allows you to disable or enable the scanner as needed. If disabled, barcodes cannot be scanned. 
 
-
-<!-- Add all the configuration options in the example ESPHome file and describe the settings -->
+> [!TIP]
+> The "Scanning Enabled" setting can be useful as a child lock to prevent children scanning barcodes. Having it toggled when a button is held on the device could be one solution. It can be used to disable the scanner at night so it doesn't shine the scanning or collimation lights. You could automate this on a shedule using a Home Assistant automation.
 
 > [!TIP]
 > If you have any issues creating the hardware, you can try adding the following to your ESPHome YAML configuration:
@@ -102,7 +106,7 @@ A number of configuration options for the GM67 are also contained within the exa
 > ```
 > This will enable more detailed debug logging which should include all UART messages coming from the barcode scanner. This can help to prove the ESP and scanner are communicating correctly.
 
-I may add more to the above example over time or add additional examples.
+It is worth rechecking the example periodically as it is being regularly updated as the proof of concept device is developed. Additional examples may also be added.
 
 #### Home Assistant Device Config
 The new device should show up in HA called "barcode-scanner" unless you changed it in the ESPHome YAML. Add it to Home Assistant as you would any other ESPHome device (it should be automatically found by HA). 
@@ -192,8 +196,9 @@ As you can see, the returned data contains a number of fields from the OpenFoodF
 > [!TIP]
 > If you have issues, you can enable verbose logging for Pyscript by adding the below to your Home Assistant configuration.yaml:
 >   ```
->   logger:  
->     custom_components.pyscript: info
+>   logger:
+>     logs:    
+>       custom_components.pyscript: info
 >   ```
 > You should then be able to see detailed logging including any errors in the Home Assistant logs.
 
@@ -305,17 +310,24 @@ target:
 > One benefit of Mealie Shopping lists synched with Home assistant is in their handling of duplicate entries. In normal Home Assistant To-Do lists, if the same product is added to the list twice or more, it will appear as multiple entries in the list (i.e. "Product 123" would appear in the list twice). In a Mealie synched shopping list, Mealie merges duplicate entries, adding a number to the front of them do indicate how many of them are required (i.e. adding "Product 123" three times would be displayed as a single entry of "3 Product 123").
 
 ## Planned Improvements / To Investigate
-This is just a brain dump of ideas for improving the proof of concept or to investigate further. If you have other ideas or suggestions, please raise an [Issue](/MattFryer/HA-Mealie-Barcode-Scanner/issues) and I'll add them.
+This is just a brain dump of ideas for improving the proof of concept or to investigate further. If you have other ideas or suggestions, please suggest them in the [Discussions section](/MattFryer/HA-Mealie-Barcode-Scanner/issues) and I'll add them.
+
+### Documentation
+- [ ] Update the readme about caching of products and being able to disable it.
+- [ ] Consider splitting the readme into separate Wiki pages instead.
+
+### Pyscript and automation
 - [X] Switch to using openfoodfacts.org instead as seems better populated.
 - [ ] If the product isn't found on openfoodfacts.org then try upcdatabase.org instead. Possible other sources of product lookup also.
-- [ ] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
+- [X] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
 - [ ] If a product isn't found, HA could send a notification asking for you to input the product name. It can then be added to the cache. Could even send to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
 - [ ] Consider implementing the automation and python as a HA integration for easier set up. Might be less flexible though.
-- [ ] A screen for feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.
-- [X] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
 - [ ] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
+
+### Hardware
+- [X] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
+- [ ] A screen on the scannerfor feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
 - [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
 - [ ] Better detecting of a product in front of the scanner using a time of flight sensor.
 - [ ] Consider a custom PCB to make a more productionised product. Or an alternative hand-held version.
-- [ ] Consider splitting the readme into separate Wiki pages instead.

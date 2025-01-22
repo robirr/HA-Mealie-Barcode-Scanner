@@ -1,4 +1,5 @@
 pyscript:
   apps:
     barcode_lookup: 
-      off_url_base: https://world.openfoodfacts.org/api/v2/product/
+      cache_csv: pyscript/apps/barcode_lookup/cache.csv # Caching can be disabled by removing the path to a cache file
+      off_url_base: https://world.openfoodfacts.org/api/v2/product/ # OpenFoodFacts.org API base path

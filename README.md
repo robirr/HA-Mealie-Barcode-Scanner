@@ -24,6 +24,26 @@ If you just want to show your appreciation, you can sponsor the project or send 
 [<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" height="37px" style="margin: 5px"/>](https://buymeacoffee.com/cereal2nd)
 [<img src="assets/images/github-sponsors-button.svg" height="37px" style="margin: 5px"/>](https://github.com/sponsors/MattFryer)
 
+## Table of Contents
+- [The Idea](#the-idea)
+- [The Solution](#the-solution)
+  - [The Hardware](#the-hardware)
+    - [Parts](#parts)
+    - [Wiring](#wiring)
+    - [GM67 Configuration](#gm67-configuration)
+    - [ESPHome YAML](#esphome-yaml)
+    - [Home Assistant Device Config](#home-assistant-device-config)
+  - [Product Lookup](#product-lookup)
+    - [Install the Pyscript Integration in HA](#install-the-pyscript-integration-in-ha)
+    - [Add the python script under Pyscripts](#add-the-python-script-under-pyscripts)
+  - [Home Assistant Automation](#home-assistant-automation)
+    - [Scanned Barcode Event](#scanned-barcode-event)
+    - [Calling the Python script to lookup the barcode](#calling-the-python-script-to-lookup-the-barcode)
+    - [Passing the product back to the ESPHome device](#passing-the-product-back-to-the-esphome-device)
+    - [Adding the product to a HA To-Do List (including a Mealie shopping list)](#adding-the-product-to-a-ha-to-do-list-including-a-mealie-shopping-list)
+- [Planned Improvements / To Investigate](#planned-improvements--to-investigate)
+
+
 ## The Idea
 The main idea is to have a way to scan a product barcode whilst preparing a meal in the kitchen and have that item added to the weekly supermarket shopping list. To ensure it is used by the whole family, it needs to be fast and simple to scan a barcode whilst preparing a meal. Ideally it will use a device mounted in the kitchen so that it doesn't require a mobile phone to work. 
 

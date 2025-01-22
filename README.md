@@ -120,7 +120,7 @@ A number of configuration options for the GM67 are also contained within the exa
 
 > [!TIP]
 > If you have any issues creating the hardware, you can try adding the following to your ESPHome YAML configuration:
-> ```
+> ```yaml
 > logger:
 >   level: VERBOSE
 > ```
@@ -148,7 +148,7 @@ You can now check the device is working and connected to Home Assistant correctl
 2. Under "Listen to events" enter "esphome.barcode_scan"
 3. Click "Start listening"
 4. Scan a barcode with the device and you should see an event appear containing a line beginning "barcode:" followed by the barcode you scanned. Something like the below:
-    ```
+    ```yaml
     event_type: esphome.barcode_scan
     data:
       device_id: ee685dc4d9ccb1de6e97a84beb7be650
@@ -199,7 +199,7 @@ If the Pyscript app has been installed and configured correctly, you should be a
 3. Click the "FILL EXAMPLE DATA" link from under the "All available parameters" section which should configure the action with the barcode "5000147030156".
 4. Click on "PERFORM ACTION"
 5. If all is configured and working properly you should see a returned response which looks like this:
-    ```
+    ```yaml
     result: success
     barcode: 5000147030156
     brand: Robinsons
@@ -215,7 +215,7 @@ As you can see, the returned data contains a number of fields from the OpenFoodF
 
 > [!TIP]
 > If you have issues, you can enable verbose logging for Pyscript by adding the below to your Home Assistant configuration.yaml:
->   ```
+>   ```yaml
 >   logger:
 >     logs:    
 >       custom_components.pyscript: info
@@ -235,7 +235,7 @@ Below are some more details of the key building blocks in the example automation
 
 #### Scanned Barcode Event
 When a barcode is scanned by the device, it triggers an event on the HA event bus. These events are the best and most reliable way to trigger an automation. An event should look something like this:
-```
+```yaml
 event_type: esphome.barcode_scan
   data:
     device_id: ee685dc4d9ccb1de6e97a84beb7be650
@@ -260,7 +260,7 @@ Add the "Pyscript Python scripting 'Barcode Lookup'" action to your workflow.
 
 We'll need to use HA templates to pass the barcode and so unfortunately as soon as we add a template to the barcode field it will tell us that it isn't possible to configure it using the visual editor. Instead, we have to use YAML and it should look something like this once configured:
 
-```
+```yaml
 action: pyscript.barcode_lookup
 metadata: {}
 data:
@@ -273,7 +273,7 @@ Note the ```trigger.event.data.barcode``` which gets the barcode passed in the e
 
 Also note the ```response_variable: product``` which provides a variable for the python script to pass data back in. We'll use this variable in any following steps where we want to use information about the product returned from the barcode lookup. The variable will contain a data structure of multiple values. If a matching product was found, it should look something like this:
 
-```
+```yaml
 result: success
 barcode: 5000147030156
 brand: Robinsons
@@ -284,7 +284,7 @@ quantity: ""
 
 If no match was found, the response data structure will be much simpler:
 
-```
+```yaml
 result: unknown
 barcode: 5000147030156
 ```
@@ -301,7 +301,7 @@ This action is called "ESPHome 'esphome.barcode_scanner_product_identified'" and
 
 The below example YAML shows how to pass the returned product name if one is found. If one isn't then "Unknown" is passed instead.
 
-```
+```yaml
 action: esphome.barcode_scanner_product_identified
 metadata: {}
 data:
@@ -318,7 +318,7 @@ This text could then be used in ESPHome to display on a screen.
 #### Adding the product to a HA To-Do List (including a Mealie shopping list)
 You can use the Home Assistant action "To-do list 'Add item'" to add an item to any To-Do list. You simply provide an entity ID for the To-Do list you wish to add it to and an item name. Yet again, using templates forces us to use YAML which should look something like this:
 
-```
+```yaml
 action: todo.add_item
 metadata: {}
 data:

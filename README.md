@@ -17,9 +17,9 @@ Being big users of both Home Assistant and Mealie, for a while I've looked for a
 > No warranties or guarantees are made regarding the contents of this repository. Anyone using the code or instructions does so at their own risk!
 
 ## Contributing
-If you'd like to help or contribute to this project, feel free to get in touch with ideas or suggestions using the [Discussions](MattFryer/HA-Mealie-Barcode-Scanner/discussions) section. Or contribute by sending pull requests.
+If you'd like to help or contribute to this project, feel free to get in touch with ideas or suggestions using the [Discussions](MattFryer/HA-Mealie-Barcode-Scanner/discussions) section. Or contribute to the development by sending pull requests.
 
-If you just want to show your appreciation, you can sponsor the project or send a one of donation using the links below:
+If you just want to show your appreciation, you can sponsor the project or send a one off donation using the links below:
 
 [<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" height="37px" style="margin: 5px"/>](https://buymeacoffee.com/cereal2nd)
 [<img src="assets/images/github-sponsors-button.svg" height="37px" style="margin: 5px"/>](https://github.com/sponsors/MattFryer)
@@ -330,24 +330,28 @@ target:
 > One benefit of Mealie Shopping lists synched with Home assistant is in their handling of duplicate entries. In normal Home Assistant To-Do lists, if the same product is added to the list twice or more, it will appear as multiple entries in the list (i.e. "Product 123" would appear in the list twice). In a Mealie synched shopping list, Mealie merges duplicate entries, adding a number to the front of them do indicate how many of them are required (i.e. adding "Product 123" three times would be displayed as a single entry of "3 Product 123").
 
 ## Planned Improvements / To Investigate
-This is just a brain dump of ideas for improving the proof of concept or to investigate further. If you have other ideas or suggestions, please suggest them in the [Discussions section](/MattFryer/HA-Mealie-Barcode-Scanner/issues) and I'll add them.
+This is just a brain dump of ideas for improving the proof of concept or to investigate further. If you have other ideas or suggestions, please suggest them in the [Discussions section](/MattFryer/HA-Mealie-Barcode-Scanner/discussions) and I'll add them.
 
 ### Documentation
 - [ ] Update the readme about caching of products and being able to disable it.
 - [ ] Consider splitting the readme into separate Wiki pages instead.
+- [ ] Add info on supported barcode formats and numeric lengths.
 
 ### Pyscript and automation
-- [X] Switch to using openfoodfacts.org instead as seems better populated.
+- [X] Switch to using openfoodfacts.org for primary lookup instead as seems better populated.
 - [ ] If the product isn't found on openfoodfacts.org then try upcdatabase.org instead. Possible other sources of product lookup also.
 - [X] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
-- [ ] If a product isn't found, HA could send a notification asking for you to input the product name. It can then be added to the cache. Could even send to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
+- [ ] If a product isn't found anywhere, HA could send a notification asking for you to input the product name. It can then be added to the cache for future lookup. Could even send only those at home or to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
 - [ ] Consider implementing the automation and python as a HA integration for easier set up. Might be less flexible though.
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.
 - [ ] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
 
+  ![Milk QR Code](https://barcode.tec-it.com/barcode.ashx?data=Generic%3A+Milk&code=QRCode&eclevel=L)
+  Milk
+
 ### Hardware
 - [X] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
-- [ ] A screen on the scannerfor feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
+- [ ] A screen on the scanner for feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
 - [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
-- [ ] Better detecting of a product in front of the scanner using a time of flight sensor.
+- [ ] Better detecting of a product in front of the scanner using a time of flight sensor if the inbuilt sensing proves to be inaccurate.
 - [ ] Consider a custom PCB to make a more productionised product. Or an alternative hand-held version.

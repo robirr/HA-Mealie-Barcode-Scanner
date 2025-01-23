@@ -1,9 +1,13 @@
 # Home Assistant (and Mealie) Barcode Scanner and Product Lookup
 
 [![GitHub license](https://img.shields.io/github/license/MattFryer/HA-Mealie-Barcode-Scanner.svg?logo=gnu&logoColor=ffffff)](https://github.com/MattFryer/HA-Mealie-Barcode-Scanner/blob/master/LICENSE)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/b4bdae71e5c74063a54b2ec946239375)](https://app.codacy.com/gh/MattFryer/HA-Mealie-Barcode-Scanner/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/t/MattFryer/HA-Mealie-Barcode-Scanner)
+![GitHub last commit](https://img.shields.io/github/last-commit/MattFryer/HA-Mealie-Barcode-Scanner)
 ![GitHub contributors](https://img.shields.io/github/contributors/MattFryer/HA-Mealie-Barcode-Scanner)
+![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/MattFryer/HA-Mealie-Barcode-Scanner)
 ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/MattFryer/HA-Mealie-Barcode-Scanner)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/MattFryer/HA-Mealie-Barcode-Scanner.svg)](http://isitmaintained.com/project/MattFryer/HA-Mealie-Barcode-Scanner "Average time to resolve an issue")
 ![GitHub Repo stars](https://img.shields.io/github/stars/MattFryer/HA-Mealie-Barcode-Scanner)
 ![GitHub forks](https://img.shields.io/github/forks/MattFryer/HA-Mealie-Barcode-Scanner)
 ![GitHub watchers](https://img.shields.io/github/watchers/MattFryer/HA-Mealie-Barcode-Scanner)

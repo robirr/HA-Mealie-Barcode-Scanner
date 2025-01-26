@@ -184,7 +184,7 @@ Once installed, you need to add the integration under the integrations section o
 > Make sure to check the option for "Allow All Imports?" when adding the Pyscript integration. If you do not, our python script will not be able to load the needed python modules. Don't worry if you missed it or already have Pyscripts installed, you can check and set this option by going to the Pyscript integration page and clicking on "CONFIGURE".
 
 #### Add the python script under Pyscripts
-Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners. Don't worry thought, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. 
+Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners. Don't worry though, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. 
 
 If you already had Pyscript installed and running other python scripts, you should hopefully already understand the basics of how Pyscript is configured. You will need to copy the "pyscript/apps/barcode_lookup" folder and its contents from this repository under your existing "pyscript/apps" folder (or create one) in your Home Assistant config folder. You will also need to amend your "pyscript/config.yaml" file to include the definition and settings for this new Pyscript app. You can copy them from the ["pyscript/config.yaml"](pyscript/config.yaml) file in this repository.
 
@@ -248,12 +248,12 @@ event_type: esphome.barcode_scan
     user_id: null
 ```
 The event data contains 2 values which can be used in the automation:
-- ```device_id``` gives the ID of the ESPHome device that sent the scan event. This can be useful if you have more than one barcode scanning device and want to return the scanned value to the correct device or even behave differently depending upon where the event originated from.
-- ```barcode``` gives the value if the barcode that was scanned. For most product barcodes this is a 13 digit number.
+- `device_id` gives the ID of the ESPHome device that sent the scan event. This can be useful if you have more than one barcode scanning device and want to return the scanned value to the correct device or even behave differently depending upon where the event originated from.
+- `barcode` gives the value if the barcode that was scanned. For most product barcodes this is a 13 digit number.
 
-Add a "Manual event" trigger to your automation and set the "Event type" to ```esphome.barcode_scan```. Optionally, to only trigger if the event came a specific device, add ```device_id: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX``` in the "Event data" field changing the XXX's to your device ID .
+Add a "Manual event" trigger to your automation and set the "Event type" to `esphome.barcode_scan`. Optionally, to only trigger if the event came a specific device, add `device_id: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` in the "Event data" field changing the XXX's to your device ID .
                                           
-The data passed in the event can be referenced in templates in any other part of your automation using ```{{ trigger.event.data.barcode }}```
+The data passed in the event can be referenced in templates in any other part of your automation using `{{ trigger.event.data.barcode }}`
 
 #### Calling the Python script to lookup the barcode
 Add the "Pyscript Python scripting 'Barcode Lookup'" action to your workflow. 
@@ -269,9 +269,9 @@ response_variable: product
 enabled: true
 ```
 
-Note the ```trigger.event.data.barcode``` which gets the barcode passed in the event trigger above. 
+Note the `trigger.event.data.barcode` which gets the barcode passed in the event trigger above. 
 
-Also note the ```response_variable: product``` which provides a variable for the python script to pass data back in. We'll use this variable in any following steps where we want to use information about the product returned from the barcode lookup. The variable will contain a data structure of multiple values. If a matching product was found, it should look something like this:
+Also note the `response_variable: product` which provides a variable for the python script to pass data back in. We'll use this variable in any following steps where we want to use information about the product returned from the barcode lookup. The variable will contain a data structure of multiple values. If a matching product was found, it should look something like this:
 
 ```yaml
 result: success
@@ -289,10 +289,10 @@ result: unknown
 barcode: 5000147030156
 ```
 
-These returned data structures can be used in HA templates. For example, we can use ```{% if product.result == "success" %}true{% endif %}``` to check whether or not a match was found. Assuming a match was found, we could use ```{{ product.title }}``` to get the name of the product. 
+These returned data structures can be used in HA templates. For example, we can use `{% if product.result == "success" %}true{% endif %}` to check whether or not a match was found. Assuming a match was found, we could use `{{ product.title }}` to get the name of the product. 
 
 > [!TIP]
-> You can use any other returned value in a similar way, changing "title" in ```{{ product.title }}``` to the name of the field in the returned data structure. (e.g. ```{{ product.brand }}```)
+> You can use any other returned value in a similar way, changing "title" in `{{ product.title }}` to the name of the field in the returned data structure. (e.g. `{{ product.brand }}`)
 
 #### Passing the product back to the ESPHome device
 There are several ways to pass data from Home Assistant to an ESPHome device. The example ESPHome YAML configuration includes one such method, an action which the device registers with HA. 
@@ -333,14 +333,16 @@ target:
 This is just a brain dump of ideas for improving the proof of concept or to investigate further. If you have other ideas or suggestions, please suggest them in the [Discussions section](/MattFryer/HA-Mealie-Barcode-Scanner/discussions) and I'll add them.
 
 ### Documentation
+- [ ] Add how to register of a UPCDB API key and how to store it in your HA secrets so it will be used by the python script.
 - [ ] Update the readme about caching of products and being able to disable it.
+- [ ] Update the readme for disabling OpenFoodFacts and/or UPCDatabase.
 - [ ] Consider splitting the readme into separate Wiki pages instead.
 - [ ] Add info on supported barcode formats and numeric lengths.
 
 ### Pyscript and automation
-- [X] Switch to using openfoodfacts.org for primary lookup instead as seems better populated.
-- [ ] If the product isn't found on openfoodfacts.org then try upcdatabase.org instead. Possible other sources of product lookup also.
-- [X] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
+- [x] Switch to using openfoodfacts.org for primary lookup instead as seems better populated.
+- [x] If the product isn't found on openfoodfacts.org then try upcdatabase.org instead. Possible other sources of product lookup also.
+- [x] Implement a local cache of barcodes and their product names to prevent hitting the APIs unnecessarily and also to allow adding custom matches to override or for unknown products.
 - [ ] If a product isn't found anywhere, HA could send a notification asking for you to input the product name. It can then be added to the cache for future lookup. Could even send only those at home or to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
 - [ ] Consider implementing the automation and python as a HA integration for easier set up. Might be less flexible though.
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.
@@ -350,7 +352,7 @@ This is just a brain dump of ideas for improving the proof of concept or to inve
   Milk
 
 ### Hardware
-- [X] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
+- [x] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
 - [ ] A screen on the scanner for feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
 - [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
 - [ ] Better detecting of a product in front of the scanner using a time of flight sensor if the inbuilt sensing proves to be inaccurate.

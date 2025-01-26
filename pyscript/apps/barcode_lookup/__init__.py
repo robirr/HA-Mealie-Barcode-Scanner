@@ -3,8 +3,9 @@ import requests
 import json
 import csv
 
-# TODO: If a UPCDB is configured, when a product isn't found in the OFF DB then try the UPCDB instead.
-# TODO: Add a method to create a product in the OFF DB if not found anywhere.
+# FIXME: OFF returns a 404 code when the product isn't found. Because of this it never gets to try UPCDB.
+# TODO: Adding a product adds it to the OpenFoodFacts and/or UPCDatabases also
+# TODO: Test setting the upcdb_url_base and upcdb_api_key to blank in config stops it trying them for matches
 
 ################################################################################
 # BARCODE LOOKUP - Available in HA
@@ -22,10 +23,6 @@ fields:
         selector:
             text:
     """
-
-    # Build the URL for the OpenFoodFacts API call
-    off_url = f'{pyscript.app_config["off_url_base"]}{barcode}.json'
-
     product = {} # Python dictionary to return data to Home Assistant
 
     # Lookup in the cache first and if found, return that
@@ -52,62 +49,183 @@ fields:
             return product
 
     # Lookup of OpenFoodFacts.org
-    try:
-        # Make the API request
-        response = task.executor(requests.get, off_url) 
-        # Raise an exception for HTTP errors
-        response.raise_for_status()
+    if not pyscript.app_config["off_url_base"] == None:
+        try:
+            # Build the URL for the OpenFoodFacts API call
+            off_url = f'{pyscript.app_config["off_url_base"]}{barcode}.json'
+        
+            # Make the API request
+            response = task.executor(requests.get, off_url) 
+            # Raise an exception for HTTP errors
+            response.raise_for_status()
 
-        # Parse the JSON
-        json_data = json.loads(response.text)
+            # Parse the JSON
+            json_data = json.loads(response.text)
 
-        # If the product is successfully returned from the API
-        if json_data.get('status') == 1: # 1 = Product found
-            # Populate the product from the OFF returned JSON
-            product['result'] = 'success'
-            product['source'] = 'OpenFoodFacts'
-            product['barcode'] = barcode
-            product['brand'] = json_data.get('product').get('brands').split(',')[0]
-            product['title'] = json_data.get('product').get('product_name').replace(',', '')
-            product['type'] = json_data.get('product').get('product_type').split(',')[0]
-            product['quantity'] = json_data.get('product').get('quantity').split(',')[0]
+            # If the product is successfully returned from the API
+            if json_data.get('status') == 1: # 1 = Product found
+                # Populate the product from the OFF returned JSON
+                product['result'] = 'success'
+                product['source'] = 'OpenFoodFacts'
+                product['barcode'] = barcode
+                product['brand'] = json_data.get('product').get('brands').split(',')[0]
+                product['title'] = json_data.get('product').get('product_name').replace(',', '')
+                product['type'] = json_data.get('product').get('product_type').split(',')[0]
+                product['quantity'] = json_data.get('product').get('quantity').split(',')[0]
 
-            # Log the found product
-            log.info(f"Barcode {barcode} identified as {product['brand']} {product['title']}")
-            
-            # Add it to the cache
-            if not pyscript.app_config["cache_csv"] == None:
-                task.executor(cache_add, product, pyscript.app_config["cache_csv"])
+                # Log the found product
+                log.info(f"Barcode {barcode} identified as {product['brand']} {product['title']}")
+                
+                # Add it to the cache
+                if not pyscript.app_config["cache_csv"] == None:
+                    task.executor(cache_add, product, pyscript.app_config["cache_csv"])
 
-            return product
-        # If the barcode is not in the database
-        elif json_data.get('success') == 0: # 0 = Unknown product
-            product['result'] = 'unknown'
-            product['source'] = 'OpenFoodFacts'
-            product['barcode'] = barcode
-            log.info(f"Barcode {barcode} not found in OpenFoodFacts database")
-            return product
-        # If an unknown error occurs
-        else:
+                return product
+            # If the barcode is not in the database
+            elif json_data.get('success') == 0: # 0 = Unknown product
+                product['result'] = 'unknown'
+                product['source'] = 'OpenFoodFacts'
+                product['barcode'] = barcode
+                log.info(f"Barcode {barcode} not found in OpenFoodFacts database")
+                return product
+            # If an unknown error occurs
+            else:
+                product['result'] = 'error'
+                product['source'] = 'OpenFoodFacts'
+                product['error'] = response
+                log.error(f"An error occurred while calling the OpenFoodFacts API: {product['error']}")
+                return product
+
+        # If a HTTP error occurs
+        except requests.exceptions.RequestException as e:
+            log.error(f"An error occurred while calling the OpenFoodFacts API: {e}")
             product['result'] = 'error'
             product['source'] = 'OpenFoodFacts'
-            product['error'] = response
-            log.error(f"An error occurred while calling the OpenFoodFacts API: {product['error']}")
+            product['error'] = e
             return product
 
-    # If a HTTP error occurs
-    except requests.exceptions.RequestException as e:
-        log.error(f"An error occurred while calling the OpenFoodFacts API: {e}")
-        product['result'] = 'error'
-        product['source'] = 'OpenFoodFacts'
-        product['error'] = e
-        return product
+    if not pyscript.app_config["upcdb_url_base"] == None and not pyscript.app_config["upcdb_api_key"] == None:
+        try:
+            # Build the URL for the UPCDatabase API call
+            upcdb_url = f'{pyscript.app_config["upcdb_url_base"]}{barcode}?apikey={pyscript.app_config["upcdb_api_key"]}'
 
-    # TODO: Lookup on UPCDatabse.org
+            # Make the API request
+            response = task.executor(requests.get, upcdb_url) 
+            # Raise an exception for HTTP errors
+            response.raise_for_status()
+
+            # The UPCDatabase API sometimes returns a load of rubbish before the JSON. So we get rid of it.
+            response_text = response.text
+            json_start = response_text.find('{')
+            response_clean = response_text[json_start:]
+
+            # Parse the JSON
+            json_data = json.loads(response_clean)
+
+            # If the product is successfully returned from the API
+            if json_data.get('success') == "true":
+                # Populate the product from the UPCDatabase returned JSON
+                product['result'] = 'success'
+                product['source'] = 'UPCDatabase'
+                product['barcode'] = barcode
+                product['brand'] = json_data.get('brand').split(',')[0]
+                if len(json_data.get('title')) >0:  
+                    product['title'] = json_data.get('title').replace(',', '') 
+                elif len(json_data.get('alias')) >0:
+                    product['title'] = json_data.get('alias').replace(',', '') 
+                else:
+                    product['title'] = json_data.get('description').replace(',', '') 
+                product['type'] = json_data.get('category').split(',')[0].lower()
+                product['quantity'] = json_data.get('metadata').get('quantity').split(',')[0]
+
+                # Log the found product
+                log.info(f"Barcode {barcode} identified as {product['brand']} {product['title']}")
+                
+                # Add it to the cache
+                if not pyscript.app_config["cache_csv"] == None:
+                    task.executor(cache_add, product, pyscript.app_config["cache_csv"])
+
+                return product
+            # If the barcode is not in the database0
+            elif json_data.get('success') == "false":
+                product['result'] = 'unknown'
+                product['source'] = 'UPCDatabase'
+                product['barcode'] = barcode
+                log.info(f"Barcode {barcode} not found in UPCDatabase database")
+                return product
+            # If an unknown error occurs
+            else:
+                product['result'] = 'error'
+                product['source'] = 'UPCDatabase'
+                product['error'] = response
+                log.error(f"An error occurred while calling the UPCDatabase API: {product['error']}")
+                return product
+
+        except:
+            log.error(f"An error occurred while calling the UPCDatabase API: {e}")
+            product['result'] = 'error'
+            product['source'] = 'UPCDatabase'
+            product['error'] = e
+            return product
 
 ################################################################################
 # ADD PRODUCT TO THE CACHE
 ################################################################################
+# We need the function to be compiled to access the open() function but it then 
+# can't access the Pyscript app config. So we create a wrapper function which 
+# can be called from Home Assistant which then calls the compiled function.
+@service(supports_response="only") # Tells Pyscript to make this function available as a HA action
+def barcode_cache_add(barcode, title, brand="", type="other", quantity="", return_response=True):
+    """yaml
+name: Barcode Cache Add
+description: Adds a product to the local cache of barcodes that have either been returned from wesites or manually entered.
+fields:
+    barcode:
+        description: The product barcode. Normally a 13 digit number but can also be other lengths.
+        example: 5000147030156
+        required: true
+        selector:
+            text:
+    brand:
+        description: The brand of the product.
+        example: Robinsons
+        required: false
+        selector:
+            text:
+    title:
+        description: The name of the of the product.
+        example: Summer Fruits Squash
+        required: true
+        selector:
+            text:
+    type:
+        description: The type of product. Currently supported values are "food" and "other".
+        example: food
+        required: true
+        selector:
+            select:
+                options:
+                    - food
+                    - other
+    quantity:
+        description: The quantity, weight, or measurement the product comes in.
+        example: 1.5l
+        required: true
+        selector:
+            text:
+    """
+    # Create a dictionary for the product
+    product = {}
+    product["barcode"] = barcode
+    product["brand"] = brand
+    product["title"] = title
+    product["type"] = type
+    product["quantity"] = quantity
+
+    # Call the compiled function that can access the file with open()
+    result = task.executor(cache_add, product, pyscript.app_config["cache_csv"])
+    return {"result": "success"} if result == True else {"result": "failed"}
+
 @pyscript_compile # Tells Pyscript to compile the function
 def cache_add(product, file):
 

@@ -63,27 +63,59 @@ uart:
       after:
         delimiter: "\r"
       sequence:
-        # Update the last barcode and scan event
-        - lambda: |-
-            UARTDebug::log_string(direction, bytes);
-            std::string str(bytes.begin(), bytes.end());
-            if (strlen(str.c_str())==14) { 
-              id(last_barcode).publish_state(str.c_str()); 
-              id(last_scan).trigger("barcode_scanned"); 
-            }
-        # Send a HA event with the scanned barcode
-        - homeassistant.event:
-            event: esphome.barcode_scan
-            data_template: 
-              barcode: "{{ scanned_barcode }}"
-            variables:
-              scanned_barcode: !lambda |-
-                  std::string str(bytes.begin(), bytes.end()); 
-                  if (strlen(str.c_str())==14) { 
-                    return str.c_str(); 
-                  } else {
-                    return "None";
-                  }                
+        - if: # If a 13 or 8 digit numeric barcode was canned
+            condition:
+              lambda: |-
+                std::string str(bytes.begin(), bytes.end()); 
+                if ( 
+                  (strlen(str.c_str()) == 14 and str.substr(0, 13).find_first_not_of("0123456789") == std::string::npos) or // is 13 digit barcode
+                  (strlen(str.c_str()) == 9 and str.substr(0, 8).find_first_not_of("0123456789") == std::string::npos) // is 8 digit barcode
+                ) { 
+                  return true; 
+                } else {
+                  return false;
+                } 
+            then:
+              # Log the received barcode and update the last_barcode and last_scan entities
+              - lambda: |-
+                  UARTDebug::log_string(direction, bytes);
+                  std::string str(bytes.begin(), bytes.end());
+                  id(last_barcode).publish_state(str.c_str()); 
+                  id(last_scan).trigger("barcode_scanned"); 
+              # Send a HA event with the scanned product barcode
+              - homeassistant.event:
+                  event: esphome.barcode_scan
+                  data_template: 
+                    barcode: "{{ scanned_barcode }}"
+                  variables:
+                    scanned_barcode: !lambda |-
+                        std::string str(bytes.begin(), bytes.end()); 
+                        return str.c_str(); 
+        - if: # If a special QR code was scanned which contains text starting "GENERIC:"
+            condition:
+              lambda: |-
+                std::string str(bytes.begin(), bytes.end());
+                if (str.substr(0, 8) == "GENERIC:") { // starts with "GENERIC:"
+                  return true; 
+                } else {
+                  return false;
+                } 
+            then:
+              # Log the received barcode and update the last_barcode and last_scan entities
+              - lambda: |-
+                  UARTDebug::log_string(direction, bytes);
+                  std::string str(bytes.begin(), bytes.end());
+                  id(last_barcode).publish_state(str.substr(8).c_str()); // Get rid of the "GENERIC:" from the front
+                  id(last_scan).trigger("barcode_scanned"); 
+              # Send a HA event with the scanned product barcode
+              - homeassistant.event:
+                  event: esphome.generic_barcode_scan
+                  data_template: 
+                    product: "{{ scanned_product }}"
+                  variables:
+                    scanned_product: !lambda |-
+                        std::string str(bytes.begin(), bytes.end()); 
+                        return str.substr(8).c_str(); 
 
 # Text Sensor
 text_sensor:
@@ -288,7 +320,7 @@ select:
     name: "Same Code Delay"
     id: same_code_delay
     optimistic: true
-    icon: mdi:barcode-scan
+    icon: mdi:repeat-variant
     entity_category: CONFIG
     options:
       - 0.5s

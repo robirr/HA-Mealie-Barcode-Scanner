@@ -12,16 +12,16 @@
 ![GitHub forks](https://img.shields.io/github/forks/MattFryer/HA-Mealie-Barcode-Scanner)
 ![GitHub watchers](https://img.shields.io/github/watchers/MattFryer/HA-Mealie-Barcode-Scanner)
 
-Being big users of both Home Assistant and Mealie, for a while I've looked for a solution to add items quickly to our Mealie shopping list by scanning the product barcode. I’ve seen lots of questions about the same idea on the HA community and Reddit, but haven’t seen any great solutions. So I set about making my own solution. The code for which and my notes as I develop the hardware and software can be found in this repository.
+Being big users of both Home Assistant and Mealie, for a while I've looked for a solution to add items quickly to our Mealie shopping list by scanning the product barcode. I’ve seen lots of questions about the same idea on the HA community and Reddit, but haven’t seen any great solutions. So I set about making my own. The code for which, and my notes as I develop the hardware and software, can be found in this repository.
 
 > [!IMPORTANT]
-> This project is a work in progress and is currently no more than a Proof Of Concept (PoC). Therefore it is subject to change and the code and examples in this repository may not work. The below is not an exhaustive walkthrough and so a reasonable understanding of Home Assistant and ESPHome will be needed to successfully follow and implement.
+> This project is a work in progress and is currently no more than a Proof Of Concept (PoC). It is therefore subject to change and the code and examples in this repository may not work. The below is not an exhaustive walkthrough and so a reasonable understanding of Home Assistant and ESPHome will be needed to successfully follow and implement.
 
 > [!WARNING]
 > No warranties or guarantees are made regarding the contents of this repository. Anyone using the code or instructions does so at their own risk!
 
 ## Contributing
-If you'd like to help or contribute to this project, feel free to get in touch with ideas or suggestions using the [Discussions](MattFryer/HA-Mealie-Barcode-Scanner/discussions) section. Or contribute to the development by sending pull requests.
+If you'd like to help or contribute to this project, feel free to get in touch with ideas or suggestions using the [Discussions](MattFryer/HA-Mealie-Barcode-Scanner/discussions) section. Or contribute to the development by sending [pull requests](MattFryer/HA-Mealie-Barcode-Scanner/pulls).
 
 If you just want to show your appreciation, you can sponsor the project or send a one off donation using the links below:
 
@@ -49,29 +49,39 @@ If you just want to show your appreciation, you can sponsor the project or send 
 
 
 ## The Idea
-The main idea is to have a way to scan a product barcode whilst preparing a meal in the kitchen and have that item added to the weekly supermarket shopping list. To ensure it is used by the whole family, it needs to be fast and simple to scan a barcode whilst preparing a meal. Ideally it will use a device mounted in the kitchen so that it doesn't require a mobile phone to work. 
+The main idea is to have a way to scan a product barcode whilst preparing a meal in the kitchen and have that item added to the weekly supermarket shopping list. To ensure it is used by the whole family, it needs to be fast and simple to scan a barcode whilst preparing a meal. Ideally, it will use a device mounted in the kitchen so that it doesn't require a mobile phone to work. 
 
-Once a barcode is scanned, it will need to be converted to a product name and then added to the shopping list. This could be any To-Do list in Home Assistant, including one created and synched by the Mealie integration. It will need to a method to highlight when a product name can't be found and to prompt the user to add the product name manually. This should be store for future lookup.
+Once a barcode is scanned, it will need to be converted to a product name and then added to the shopping list. This could be any To-Do list in Home Assistant, including one created and synched by the Mealie integration. It will need a method to highlight when a product name can't be found and to prompt the user to add the product name manually. This should be stored for future lookup.
+
+### Generic Product QR Codes
+As well as scanning genuine numeric product barcodes, the GM67 supports scanning QR codes. We can use this capability to have special QR codes which allow us to add generic products to our shopping list. 
+
+You can create special QR codes using free online QR code generators. As long as the QR code contains text beginning with `GENERIC:` the text after will be passed to Home Assistant to be added to the shopping list. 
+
+An example QR code would be the below which contains the text `GENERIC:Milk`. 
+
+![QR Code for Milk](assets/images/qr-milk.gif)
+
 
 ## The Solution
-The planned solution is made up of 3 main parts: 
-1. A hardware solution to scan the product barcode and pass it to Home Assistant. This is powered using ESPHome of speed of implementing and ease of integrations.
-2. A Python script running in the Pyscripts integration in Home Assistant which looks up a barcode on the UPCDatabase.org and/or OpenFoodFacts.org API and returns the product name.
+The PoC solution is made up of 3 main parts: 
+1. A hardware solution to scan the product barcode and pass it to Home Assistant. This is powered using ESPHome for speed of implementing and ease of integration into Home Assistant.
+2. A Python script running in the Pyscripts integration in Home Assistant which looks up a barcode on the OpenFoodFacts.org and/or UPCDatabase.org API and returns the product name.
 3. A Home Assistant Automation to link the above together, triggering when a barcode is scanned, passing it to the Python script to get the name and then adding it to the desired shopping list.
 
 ### The Hardware
 
-For simplicity of creation and integration with Home Assistant, prototype hardware has been created using [ESPHome](https://esphome.io/). The final hardware solution will likely also use ESPHome. If it is ever productionised, ESPHome can also be used with ability to register a product for automatic updates, etc. 
+For simplicity of creation and integration with Home Assistant, prototype hardware has been created using off the shelf development boards and [ESPHome](https://esphome.io/). The final hardware solution may include custom hardware and will likely also use ESPHome. If it is ever productionised, ESPHome can also be used with ability to register a product for automatic updates, etc. 
 
 #### Parts
 
 The minimum required hardware would be:
 - An ESP8266 or ESP32 development board which can be brought widely on ebay or Aliexpress for under £5 (GBP). (e.g. [https://www.ebay.co.uk/itm/166478265403](https://www.ebay.co.uk/itm/166478265403))
-- A suitable barcode scanner such as GM67 which can be brought widely on ebay and Aliexpress for around £20 (GBP). (e.g. [https://www.ebay.co.uk/itm/365225165259](https://www.ebay.co.uk/itm/365225165259))
+- A suitable barcode scanner board such as GM67 which can be brought widely on ebay and Aliexpress for around £20 (GBP). (e.g. [https://www.ebay.co.uk/itm/365225165259](https://www.ebay.co.uk/itm/365225165259))
 
 ![Prototype device](assets/images/prototype_gm67.png)
 
-Optionally, you could also add a screen or LEDs to indicate if a scanned product was successfully identified. You could also add buttons to switch the scanner on and off or even to change which list you would like the product adding to. I might add these features to my eventual solution. 
+Optionally, you could also add a screen or LEDs to indicate if a scanned product was successfully identified. You could also add buttons to switch the scanner on and off, or even to change which list you would like the product adding to. I might add these features to my eventual solution. 
 
 #### Wiring
 We need to wire the GM67 to the ESP board. Which pins on the ESP board you choose to use is up to you but your ESPhome YAML needs to match the pins. The below table shows the wiring colours and pins for the example ESPHome YAML files.
@@ -89,11 +99,12 @@ We need to wire the GM67 to the ESP board. Which pins on the ESP board you choos
 The cable provided for UART/TTL with the GM67 had bare wires to which I added Dupont connectors to make it simple to connect to the ESP board. You can connect however you wish (e.g. soldering). 
 
 #### GM67 Configuration
-Out of the box, the GM67 I received was configured to only talk on the USB interface. Unless this is changed, it won't interface and send barcodes to the ESP board. To change settings on the GM67 there is an extensive document containing special QR codes to apply settings. The documentation for all of the GM range of barcode scanners can be found [HERE](https://www.dropbox.com/scl/fo/87hz5h82k25j3p9k5u603/AJfkL6iYDATRGkLYJjuhUJE?rlkey=2fyvdir15kb1kj2ada1zkadqt&e=1&dl=0).
+Out of the box, the GM67 I received was configured to only talk on the USB interface. Unless this is changed, it won't interface and send barcodes to the ESP board. To change settings on the GM67 there is an extensive document containing special QR codes that you can scan to apply settings. The documentation for all of the GM range of barcode scanners can be found [HERE](https://www.dropbox.com/scl/fo/87hz5h82k25j3p9k5u603/AJfkL6iYDATRGkLYJjuhUJE?rlkey=2fyvdir15kb1kj2ada1zkadqt&e=1&dl=0).
 
 Assuming you have the GM67 like I do, you can scan the following QR code with the scanner to enable UART/TTL mode:
 
 ![TTL 232 Interface QR Code](assets/images/ttl232_enable.png)
+<!-- QR code contains "^#SC^3030010" -->
 
 Other configuration options for the GM67 are available from within Home Assistant once the ESPHome device has been configured.
 
@@ -130,6 +141,7 @@ A number of configuration options for the GM67 are also contained within the exa
 > ```
 > This will enable more detailed debug logging which should include all UART messages coming from the barcode scanner. This can help to prove the ESP and scanner are communicating correctly.
 
+> [!IMPORTANT] 
 It is worth rechecking the example periodically as it is being regularly updated as the proof of concept device is developed. Additional examples may also be added.
 
 #### Home Assistant Device Config
@@ -169,9 +181,9 @@ You can now check the device is working and connected to Home Assistant correctl
 > Ensure you have the above working and can see the "barcode_scan" events in Home Assistant before moving on.
 
 ### Product Lookup
-A custom python script is used to look up a passed product barcode on the [openfoodfacts.org](https://openfoodfacts.org/) website and return the name of the product. Home Assistant can run custom python scripts directly but additional python libraries can't be important which limits what can be done with them.
+A custom python script is used to look up a passed product barcode on the [openfoodfacts.org](https://openfoodfacts.org/) website and return the name of the product. Home Assistant can run custom python scripts directly but additional python libraries can't be imported which limits what can be done with them.
 
-Instead, we can use the [Pyscript](https://github.com/custom-components/Pyscript) integration to run out python script. 
+Instead, we can use the [Pyscript](https://github.com/custom-components/Pyscript) integration to run our python script. 
 
 #### Install the Pyscript Integration in HA
 If you aren't already using Pyscripts for some other purpose then you need to install it. Full instructions for how to install the Pyscript integration can be found on the repository [https://github.com/custom-components/Pyscript](https://github.com/custom-components/Pyscript). 
@@ -193,7 +205,9 @@ Pyscript can have a bit of a learning curve to set up and the documentation isn'
 If you already had Pyscript installed and running other python scripts, you should hopefully already understand the basics of how Pyscript is configured. You will need to copy the "pyscript/apps/barcode_lookup" folder and its contents from this repository under your existing "pyscript/apps" folder (or create one) in your Home Assistant config folder. You will also need to amend your "pyscript/config.yaml" file to include the definition and settings for this new Pyscript app. You can copy them from the ["pyscript/config.yaml"](pyscript/config.yaml) file in this repository.
 
 > [!TIP]
-> Pyscript should pick up the new script automatically but to be sure it is best to restart Home Assistant to make sure everything is reloaded.
+> Pyscript should pick up the new script and config automatically but to be certain it is best to restart Home Assistant to make sure everything is reloaded.
+
+<!-- Options in the config for config csv location and turning off, turning on and off the diff APIs and setting API keys in secrets -->
 
 The Pyscript app configuration contains the base path to use for the OpenFoodFacts.org API. This is so that it is easy to amend in the future if needed without having to modify the python script (i.e. if they move from v2 to v3 of their API).
 
@@ -258,6 +272,24 @@ The event data contains 2 values which can be used in the automation:
 Add a "Manual event" trigger to your automation and set the "Event type" to `esphome.barcode_scan`. Optionally, to only trigger if the event came a specific device, add `device_id: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` in the "Event data" field changing the XXX's to your device ID .
                                           
 The data passed in the event can be referenced in templates in any other part of your automation using `{{ trigger.event.data.barcode }}`
+
+#### Special QR Scan Event
+The event fired when a generic product QR code is scanned is `esphome.generic_barcode_scan`. The event payload look similar but slightly different as below:
+```yaml
+event_type: esphome.generic_barcode_scan
+data:
+  device_id: ee685dc4d9ccb1de6e97a84beb7be650
+  product: Milk
+origin: LOCAL
+time_fired: "2025-01-28T19:48:23.489490+00:00"
+context:
+  id: 01JJQ7ACA13SSR733QG3KR8K46
+  parent_id: null
+  user_id: null
+```
+You can see that the event data contains the `device_id` which can be used as described above. Instead of a barcode we have a `product` value containing the text from the QR code (the `GENERIC:` part has).
+
+The data passed in the event can be referenced in templates in any other part of your automation using `{{ trigger.event.data.product }}`.
 
 #### Calling the Python script to lookup the barcode
 Add the "Pyscript Python scripting 'Barcode Lookup'" action to your workflow. 
@@ -338,8 +370,9 @@ This is just a brain dump of ideas for improving the proof of concept or to inve
 
 ### Documentation
 - [ ] Add how to register of a UPCDB API key and how to store it in your HA secrets so it will be used by the python script.
-- [ ] Update the readme about caching of products and being able to disable it.
+- [ ] Update the readme about caching of products and being able to disable it. Also the clear cache and add to cache actions
 - [ ] Update the readme for disabling OpenFoodFacts and/or UPCDatabase.
+- [x] Update readme with info on QR codes to add an item to the shopping list (e.g. "GENERIC:Milk")
 - [ ] Consider splitting the readme into separate Wiki pages instead.
 - [ ] Add info on supported barcode formats and numeric lengths.
 
@@ -350,10 +383,7 @@ This is just a brain dump of ideas for improving the proof of concept or to inve
 - [ ] If a product isn't found anywhere, HA could send a notification asking for you to input the product name. It can then be added to the cache for future lookup. Could even send only those at home or to whoever is in the kitchen using presence detection. Or even ask using a voice assistant?
 - [ ] Consider implementing the automation and python as a HA integration for easier set up. Might be less flexible though.
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.
-- [ ] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
-
-  ![Milk QR Code](https://barcode.tec-it.com/barcode.ashx?data=Generic%3A+Milk&code=QRCode&eclevel=L)
-  Milk
+- [x] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
 
 ### Hardware
 - [x] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 

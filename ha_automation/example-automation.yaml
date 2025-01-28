@@ -3,33 +3,61 @@ description: "An example automation that demonstrates how to trigger on the HA e
 triggers:
   - trigger: event
     event_type: esphome.barcode_scan
+    id: Product Barcode
+  - trigger: event
+    event_type: esphome.generic_barcode_scan
+    id: Generic Barcode
 conditions: []
 actions:
-  - action: pyscript.barcode_lookup
-    metadata: {}
-    data:
-      barcode: "{{ trigger.event.data.barcode }}"
-    response_variable: product
-    enabled: true
-  - action: esphome.barcode_scanner_product_identified
-    metadata: {}
-    data:
-      product: >-
-        {% if product.result == 'success' %}{% if product.brand | length >0    
-        %}{{product.brand}} {% endif %}{{product.title}} {% else %}Unknown{%
-        endif %}
-  - alias: If the barcode was found
-    if:
-      - condition: template
-        value_template: "{% if product.result == \"success\" %}true{% endif %}"
-    then:
-      - action: todo.add_item
-        metadata: {}
-        data:
-          item: >-
-            {% if product.result == 'success' %}{% if product.brand | length >0
-            %}{{product.brand}} {% endif %}{{product.title}}{% endif %}
-        target:
-          entity_id: todo.mealie_supermarket
-    enabled: true
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - Product Barcode
+        sequence:
+          - action: pyscript.barcode_lookup
+            metadata: {}
+            data:
+              barcode: "{{ trigger.event.data.barcode }}"
+            response_variable: product
+            enabled: true
+          - action: esphome.barcode_scanner_product_identified
+            metadata: {}
+            data:
+              product: >-
+                {% if product.result == 'success' %}{% if product.brand | length
+                >0     %}{{product.brand}} {% endif %}{{product.title}} {% else
+                %}Unknown{% endif %}
+          - alias: If the barcode was found
+            if:
+              - condition: template
+                value_template: "{% if product.result == \"success\" %}true{% endif %}"
+            then:
+              - action: todo.add_item
+                metadata: {}
+                data:
+                  item: >-
+                    {% if product.result == 'success' %}{% if product.quantity |
+                    length >0  %}{{product.quantity}} {% endif %}{% if
+                    product.brand | length >0 %}{{product.brand}} {% endif
+                    %}{{product.title}}{% endif %}
+                target:
+                  entity_id:
+                    - todo.mealie_supermarket
+            enabled: true
+      - conditions:
+          - condition: trigger
+            id:
+              - Generic Barcode
+        sequence:
+          - action: esphome.barcode_scanner_product_identified
+            metadata: {}
+            data:
+              product: "{{ trigger.event.data.product }}"
+          - action: todo.add_item
+            metadata: {}
+            data:
+              item: "{{ trigger.event.data.product }}"
+            target:
+              entity_id: todo.mealie_supermarket
 mode: single

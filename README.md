@@ -25,7 +25,7 @@ If you'd like to help or contribute to this project, feel free to get in touch w
 
 If you just want to show your appreciation, you can sponsor the project or send a one off donation using the links below:
 
-[<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" height="37px" style="margin: 5px"/>](https://buymeacoffee.com/cereal2nd)
+[<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" height="37px" style="margin: 5px"/>](https://buymeacoffee.com/mattfryer)
 [<img src="assets/images/github-sponsors-button.svg" height="37px" style="margin: 5px"/>](https://github.com/sponsors/MattFryer)
 
 ## Table of Contents

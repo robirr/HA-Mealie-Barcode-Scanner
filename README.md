@@ -384,6 +384,7 @@ This is just a brain dump of ideas for improving the proof of concept or to inve
 - [ ] Consider implementing the automation and python as a HA integration for easier set up. Might be less flexible though.
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.
 - [x] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
+- [x] The APIs some times return a success but have no name for the product. The code needs to handle these as unknown.
 
 ### Hardware
 - [x] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 

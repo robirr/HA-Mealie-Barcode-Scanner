@@ -1,5 +1,4 @@
 # TODO: Adding a product adds it to the OpenFoodFacts and/or UPCDatabases also
-# TODO: Handle when the APIs return a success but the product has no name listed
 
 # Test Barcodes
 # 5000147030156 - Robinson squash - Found on OFF and UPCDB
@@ -304,8 +303,9 @@ def off_lookup(barcode):
         # Parse the JSON
         json_data = json.loads(response.content)
 
-        # Check the API is actually reporting a success
-        if json_data.get('status') == 1: # 1 = Product found
+        # Check the API is actually reporting a success and has a product name
+        if json_data.get('status') == 1 and \
+            len(str(json_data.get('product').get('product_name') or '')) > 0:
             # Populate the product from the OFF returned JSON
             product['result'] = 'success'
             product['source'] = 'OpenFoodFacts'
@@ -314,6 +314,11 @@ def off_lookup(barcode):
             product['title'] = str(json_data.get('product').get('product_name') or '').replace(',', '')
             product['type'] = str(json_data.get('product').get('product_type') or '').split(',')[0]
             product['quantity'] = str(json_data.get('product').get('quantity') or '').split(',')[0]
+            return product
+        else:
+            product['result'] = 'unknown'
+            product['source'] = 'OpenFoodFacts'
+            product['barcode'] = barcode
             return product
 
     # If it returned a 404 return unknown
@@ -358,25 +363,34 @@ def upcdb_lookup(barcode):
         # Now it's clean, parse the JSON
         json_data = json.loads(response_clean)
 
-        # If the product is successfully returned from the API
+        # If the product is successfully returned from the API 
         if json_data.get('success') == True:
-            # Populate the product from the UPCDatabase returned JSON
-            product['result'] = 'success'
-            product['source'] = 'UPCDatabase'
-            product['barcode'] = barcode
-            product['brand'] = str(json_data.get('brand') or '').split(',')[0]
-            if len(json_data.get('title')) >0:  
-                product['title'] = str(json_data.get('title') or '').replace(',', '') 
-            elif len(json_data.get('alias')) >0:
-                product['title'] = str(json_data.get('alias') or '').replace(',', '') 
+            if len(json_data.get('title')) > 0 or \
+                len(json_data.get('alias')) > 0 or \
+                len(json_data.get('description')) > 0:
+                # Populate the product from the UPCDatabase returned JSON
+                product['result'] = 'success'
+                product['source'] = 'UPCDatabase'
+                product['barcode'] = barcode
+                product['brand'] = str(json_data.get('brand') or '').split(',')[0]
+                if len(json_data.get('title')) >0:  
+                    product['title'] = str(json_data.get('title') or '').replace(',', '') 
+                elif len(json_data.get('alias')) >0:
+                    product['title'] = str(json_data.get('alias') or '').replace(',', '') 
+                else:
+                    product['title'] = str(json_data.get('description') or '').replace(',', '') 
+                product['type'] = str(json_data.get('category') or '').split(',')[0].lower()
+                if not json_data.get('metadata') == None:
+                    product['quantity'] = str(json_data.get('metadata').get('quantity') or '').split(',')[0]
+                else: 
+                    product['quantity'] = ''
+                return product
             else:
-                product['title'] = str(json_data.get('description') or '').replace(',', '') 
-            product['type'] = str(json_data.get('category') or '').split(',')[0].lower()
-            if not json_data.get('metadata') == None:
-                product['quantity'] = str(json_data.get('metadata').get('quantity') or '').split(',')[0]
-            else: 
-                product['quantity'] = ''
-            return product
+                product['result'] = 'unknown'
+                product['source'] = 'UPCDatabase'
+                product['barcode'] = barcode
+                return product
+
         # If the barcode is not in the database0
         elif json_data.get('success') == False:
             product['result'] = 'unknown'

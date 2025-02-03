@@ -53,6 +53,18 @@ The main idea is to have a way to scan a product barcode whilst preparing a meal
 
 Once a barcode is scanned, it will need to be converted to a product name and then added to the shopping list. This could be any To-Do list in Home Assistant, including one created and synched by the Mealie integration. It will need a method to highlight when a product name can't be found and to prompt the user to add the product name manually. This should be stored for future lookup.
 
+### Supported Barcodes
+The scanner needs to support all barcode standards commonly in use. The 4 most common standards are:
+
+| Standard | Barcode Length | Use                                                                             |
+|----------|----------------|---------------------------------------------------------------------------------|
+| EAN-13   | 13-digit       | Most commonly used across Europe.                                               |
+| EAN-8    | 8-digit        | Used across Europe. Used on smaller products unable to fit a larger barcode.    |
+| UPC-A    | 12-digit       | Mostly used in North America                                                    |
+| UPC-E    | 8-digit        | Used in North America. Used on smaller products unable to fit a larger barcode. |
+
+The GM67 barcode scanning head supports all of the above standards and many more. The code must be able to handle these barcode lengths also.
+
 ### Generic Product QR Codes
 As well as scanning genuine numeric product barcodes, the GM67 supports scanning QR codes. We can use this capability to have special QR codes which allow us to add generic products to our shopping list. 
 

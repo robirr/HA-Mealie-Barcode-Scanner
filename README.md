@@ -374,7 +374,7 @@ This is just a brain dump of ideas for improving the proof of concept or to inve
 - [ ] Update the readme for disabling OpenFoodFacts and/or UPCDatabase.
 - [x] Update readme with info on QR codes to add an item to the shopping list (e.g. "GENERIC:Milk")
 - [ ] Consider splitting the readme into separate Wiki pages instead.
-- [ ] Add info on supported barcode formats and numeric lengths.
+- [ ] Add info on supported barcode formats and numeric lengths (EAN-13, EAN-8, UPC-A and UPC-E).
 
 ### Pyscript and automation
 - [x] Switch to using openfoodfacts.org for primary lookup instead as seems better populated.
@@ -392,3 +392,4 @@ This is just a brain dump of ideas for improving the proof of concept or to inve
 - [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
 - [ ] Better detecting of a product in front of the scanner using a time of flight sensor if the inbuilt sensing proves to be inaccurate.
 - [ ] Consider a custom PCB to make a more productionised product. Or an alternative hand-held version.
+- [x] Add support for 12 digit UPC-A barcodes also

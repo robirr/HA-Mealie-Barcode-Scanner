@@ -68,8 +68,9 @@ uart:
               lambda: |-
                 std::string str(bytes.begin(), bytes.end()); 
                 if ( 
-                  (strlen(str.c_str()) == 14 and str.substr(0, 13).find_first_not_of("0123456789") == std::string::npos) or // is 13 digit barcode
-                  (strlen(str.c_str()) == 9 and str.substr(0, 8).find_first_not_of("0123456789") == std::string::npos) // is 8 digit barcode
+                  (strlen(str.c_str()) == 14 and str.substr(0, 13).find_first_not_of("0123456789") == std::string::npos) or // is 13 digit EAN-13 barcode
+                  (strlen(str.c_str()) == 13 and str.substr(0, 12).find_first_not_of("0123456789") == std::string::npos) or // is 12 digit UPC-A barcode
+                  (strlen(str.c_str()) == 9 and str.substr(0, 8).find_first_not_of("0123456789") == std::string::npos) // is 8 digit EAN-8 or UPC-E barcode
                 ) { 
                   return true; 
                 } else {

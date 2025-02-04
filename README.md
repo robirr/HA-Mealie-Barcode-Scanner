@@ -212,9 +212,41 @@ Once installed, you need to add the integration under the integrations section o
 > Make sure to check the option for "Allow All Imports?" when adding the Pyscript integration. If you do not, our python script will not be able to load the needed python modules. Don't worry if you missed it or already have Pyscripts installed, you can check and set this option by going to the Pyscript integration page and clicking on "CONFIGURE".
 
 #### Add the python script under Pyscripts
-Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners. Don't worry though, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. 
+Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners with no python development experience. Don't worry though, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. 
 
 If you already had Pyscript installed and running other python scripts, you should hopefully already understand the basics of how Pyscript is configured. You will need to copy the "pyscript/apps/barcode_lookup" folder and its contents from this repository under your existing "pyscript/apps" folder (or create one) in your Home Assistant config folder. You will also need to amend your "pyscript/config.yaml" file to include the definition and settings for this new Pyscript app. You can copy them from the ["pyscript/config.yaml"](pyscript/config.yaml) file in this repository.
+
+Once the files are in place, you will need to configure the options you wish to use. All options are set in the "pyscript/config.yaml" file. The available options can be configured as follows:
+1. Local product caching - Caching is highly recommended for both speed and staying under daily API request limits. To enable caching, set the ```cache_csv``` key to the path of the cache file. By default it is set to:
+    ```yaml
+    cache_csv: pyscript/apps/barcode_lookup/cache.csv
+    ```
+    Setting it to nothing will disable caching:
+    ```yaml
+    cache_csv: 
+    ```
+- OpenFoodFacts.org - If the OpenFoodFacts.org website should be used for looking up barcodes. To enable it, the base path of the OpenFoodFacts API should be set:
+    ```yaml
+    off_url_base: https://world.openfoodfacts.org/api/v2/product/ 
+    ```
+    The path is held in config to allow easy of future changes (i.e. when v3 of the API is released). Setting it to nothing will disable looking up barcodes on the UPCDatabase API:
+    ```yaml
+    off_url_base:  
+    ```
+- UPCDatabase.org - If the UPCDatabase.org website should be used for looking up barcodes. The UPCDatabase.org API requires you to register for a free API key. To obtain an API key for UPCDatabase.org, go to the [UPCDatabase.org website](https://upcdatabase.org) and click "Signup" from the top right. Follow the instructions to create an account. Once you have an account and are logged in, go to your [account API keys](https://upcdatabase.org/apikeys), click on "New Token", give it any name you wish (e.g. "Home Assistant") and click on "Create". You will then see the newly created key and can copy the "Token" to add to the config. To enable using UPCDatabase.org for lookups, both the base path of the UPCDatabase API should be set as well as your API key:
+    ```yaml
+    upcdb_url_base: https://api.upcdatabase.org/product/ 
+    upcdb_api_key: !secret upcdb_api
+    ```
+    The above example references the API key as being held in the Home Assistant secrets.yaml file. This is highly recommended. Add the below to your secrets file and replace the ```XXXXX``` with your UPCDatabase API key token:
+    ```yaml
+    upcdb_api: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    ```    
+    The path is held in config to allow easy of future changes if needed. Setting either the path and/or API key to nothing will disable looking up barcodes on the UPCDatabase API:
+    ```yaml
+    upcdb_url_base: 
+    upcdb_api_key: !secret upcdb_api 
+    ```
 
 > [!TIP]
 > Pyscript should pick up the new script and config automatically but to be certain it is best to restart Home Assistant to make sure everything is reloaded.
@@ -381,12 +413,12 @@ target:
 This is just a brain dump of ideas for improving the proof of concept or to investigate further. If you have other ideas or suggestions, please suggest them in the [Discussions section](/MattFryer/HA-Mealie-Barcode-Scanner/discussions) and I'll add them.
 
 ### Documentation
-- [ ] Add how to register of a UPCDB API key and how to store it in your HA secrets so it will be used by the python script.
-- [ ] Update the readme about caching of products and being able to disable it. Also the clear cache and add to cache actions
-- [ ] Update the readme for disabling OpenFoodFacts and/or UPCDatabase.
+- [x] Add how to register for a UPCDB API key and how to store it in your HA secrets so it will be used by the python script.
+- [x] Update the readme about caching of products and being able to disable it. Also the clear cache and add to cache actions
+- [x] Update the readme for disabling OpenFoodFacts and/or UPCDatabase.
 - [x] Update readme with info on QR codes to add an item to the shopping list (e.g. "GENERIC:Milk")
 - [ ] Consider splitting the readme into separate Wiki pages instead.
-- [ ] Add info on supported barcode formats and numeric lengths (EAN-13, EAN-8, UPC-A and UPC-E).
+- [x] Add info on supported barcode formats and numeric lengths (EAN-13, EAN-8, UPC-A and UPC-E).
 
 ### Pyscript and automation
 - [x] Switch to using openfoodfacts.org for primary lookup instead as seems better populated.
@@ -397,11 +429,13 @@ This is just a brain dump of ideas for improving the proof of concept or to inve
 - [ ] Investigate if a scanned product can be found on Amazon and added to your shopping basket ready for purchase.
 - [x] Option to have special QR codes which when scanned add some text in the QR code to the list rather than doing a barcode lookup (e.g. Add "Milk" to the shopping list). Possible to trigger a different HA event if the scanned code starts with a specific string.
 - [x] The APIs some times return a success but have no name for the product. The code needs to handle these as unknown.
+- [ ] Switch caching to use SQLite instead of CSV for handling large numbers of barcodes.
 
 ### Hardware
 - [x] Investigate sending serial commands to the GM67 to allow for options in the HA device to configure the scanning mode, to turn off the scanner, etc. 
 - [ ] A screen on the scanner for feedback of if the scanned code was found and buttons to change which shopping list you want the product added to.
 - [ ] 3D printable case to house the parts under a kitchen cupboard with the barcode scanner facing down. Straight down or angled?
 - [ ] Better detecting of a product in front of the scanner using a time of flight sensor if the inbuilt sensing proves to be inaccurate.
-- [ ] Consider a custom PCB to make a more productionised product. Or an alternative hand-held version.
-- [x] Add support for 12 digit UPC-A barcodes also
+- [ ] Consider a custom PCB to make a more productionised product. Or an alternative hand-held version. Can use the GM65-S or GM77-S instead.
+- [x] Add support for 12 digit UPC-A barcodes also.
+- [ ] Add support for 14 digit ITF-14 barcodes.

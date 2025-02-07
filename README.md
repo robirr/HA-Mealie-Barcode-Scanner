@@ -14,6 +14,9 @@
 
 Being big users of both Home Assistant and Mealie, for a while I've looked for a solution to add items quickly to our Mealie shopping list by scanning the product barcode. I’ve seen lots of questions about the same idea on the HA community and Reddit, but haven’t seen any great solutions. So I set about making my own. The code for which, and my notes as I develop the hardware and software, can be found in this repository.
 
+[![See it in action](/assets/images/youtube-video.png)](https://youtu.be/--UgMRmeyyo "Youtube: Home Assistant Mealie Barcode Scanner Prototype")
+
+
 > [!IMPORTANT]
 > This project is a work in progress and is currently no more than a Proof Of Concept (PoC). It is therefore subject to change and the code and examples in this repository may not work. The below is not an exhaustive walkthrough and so a reasonable understanding of Home Assistant and ESPHome will be needed to successfully follow and implement.
 
@@ -49,9 +52,9 @@ If you just want to show your appreciation, you can sponsor the project or send 
 
 
 ## The Idea
-The main idea is to have a way to scan a product barcode whilst preparing a meal in the kitchen and have that item added to the weekly supermarket shopping list. To ensure it is used by the whole family, it needs to be fast and simple to scan a barcode whilst preparing a meal. Ideally, it will use a device mounted in the kitchen so that it doesn't require a mobile phone to work. 
+The main idea is to have a way to scan the barcode on an empty or nearly empty product in the kitchen and have that item added to the weekly supermarket shopping list. To ensure it is used by the whole family, it needs to be fast and simple to scan a barcode whilst mid preparing a meal. Ideally, it will use a device mounted in the kitchen so that it doesn't require a mobile phone to work. And it needs to be easy to access and inconspicuous.
 
-Once a barcode is scanned, it will need to be converted to a product name and then added to the shopping list. This could be any To-Do list in Home Assistant, including one created and synched by the Mealie integration. It will need a method to highlight when a product name can't be found and to prompt the user to add the product name manually. This should be stored for future lookup.
+Once a barcode is scanned, it will need to be converted to a product name and then added to the shopping list. This could be any To-Do list in Home Assistant, including one created and synched by the Mealie integration. It will need a method to highlight when a product name can't be found and to prompt the user to add the product name manually, either immediately or when convenient. Manually entered products should be stored for future use.
 
 ### Supported Barcodes
 The scanner needs to support all barcode standards commonly in use. The 4 most common standards are:
@@ -63,7 +66,7 @@ The scanner needs to support all barcode standards commonly in use. The 4 most c
 | UPC-A    | 12-digit       | Mostly used in North America                                                    |
 | UPC-E    | 8-digit        | Used in North America. Used on smaller products unable to fit a larger barcode. |
 
-The GM67 barcode scanning head supports all of the above standards and many more. The code must be able to handle these barcode lengths also.
+The GM67 barcode scanning head used for the below prototype supports all of the above standards and many more. The code must be able to handle these barcode lengths also.
 
 ### Generic Product QR Codes
 As well as scanning genuine numeric product barcodes, the GM67 supports scanning QR codes. We can use this capability to have special QR codes which allow us to add generic products to our shopping list. 
@@ -74,9 +77,10 @@ An example QR code would be the below which contains the text `GENERIC:Milk`.
 
 ![QR Code for Milk](assets/images/qr-milk.gif)
 
+These generic barcodes could be printed on cards and stored near the scanner for ease of use. Alternatively, a method of pulling from a library of generic codes on a phone and scanning the screen could also be used.
 
 ## The Solution
-The PoC solution is made up of 3 main parts: 
+The below details a Proof of Concept (PoC) solution to test the idea and to get all code functional. The PoC solution is made up of 3 main parts: 
 1. A hardware solution to scan the product barcode and pass it to Home Assistant. This is powered using ESPHome for speed of implementing and ease of integration into Home Assistant.
 2. A Python script running in the Pyscripts integration in Home Assistant which looks up a barcode on the OpenFoodFacts.org and/or UPCDatabase.org API and returns the product name.
 3. A Home Assistant Automation to link the above together, triggering when a barcode is scanned, passing it to the Python script to get the name and then adding it to the desired shopping list.
@@ -89,17 +93,17 @@ For simplicity of creation and integration with Home Assistant, prototype hardwa
 
 The minimum required hardware would be:
 - An ESP8266 or ESP32 development board which can be brought widely on ebay or Aliexpress for under £5 (GBP). (e.g. [https://www.ebay.co.uk/itm/166478265403](https://www.ebay.co.uk/itm/166478265403))
-- A suitable barcode scanner board such as GM67 which can be brought widely on ebay and Aliexpress for around £20 (GBP). (e.g. [https://www.ebay.co.uk/itm/365225165259](https://www.ebay.co.uk/itm/365225165259))
+- A suitable barcode scanner board such as GM67 which can be brought widely on ebay and Aliexpress for under £20 (GBP). (e.g. [https://www.ebay.co.uk/itm/365225165259](https://www.ebay.co.uk/itm/365225165259))
 
 ![Prototype device](assets/images/prototype_gm67.png)
 
-Optionally, you could also add a screen or LEDs to indicate if a scanned product was successfully identified. You could also add buttons to switch the scanner on and off, or even to change which list you would like the product adding to. I might add these features to my eventual solution. 
+Optionally, you could also add a screen and/or LEDs to indicate if a scanned product was successfully identified. You could also add buttons to switch the scanner on and off, or even to change which list you would like the product adding to. I might add these features to my eventual solution. 
 
 #### Wiring
 We need to wire the GM67 to the ESP board. Which pins on the ESP board you choose to use is up to you but your ESPhome YAML needs to match the pins. The below table shows the wiring colours and pins for the example ESPHome YAML files.
 
 > [!CAUTION]
-> The wiring colours of the cable provided with the GM67 are not standard. Care should be taken to ensure the correct wiring in order to not damage either the GM67 or the ESP board. Do not rely on the wiring colours as the cable provided may not be the same as the one I received.
+> The wiring colours of the cable provided with the GM67 are not standard. Care should be taken to ensure the correct wiring in order to not damage either the GM67 or the ESP board. Do not rely on the wiring colours as the cable provided may not be the same as the one I received. Check the GM67 manual (linked below) for pinout information.
 
 | GM67 Board UART/TTL Pin | ESP Board Pin | Supplied Wire Colour |
 | ----------------------- | ------------- | -------------------- |
@@ -108,7 +112,7 @@ We need to wire the GM67 to the ESP board. Which pins on the ESP board you choos
 | TX                      | GPIO15        | Black                |
 | 5V                      | 5V            | Red                  |
 
-The cable provided for UART/TTL with the GM67 had bare wires to which I added Dupont connectors to make it simple to connect to the ESP board. You can connect however you wish (e.g. soldering). 
+The cable provided for UART/TTL with the GM67 had bare wires to which I added Dupont connectors to make it simple to connect to the ESP board during prototyping. You can connect the wires however you wish (e.g. soldering). 
 
 #### GM67 Configuration
 Out of the box, the GM67 I received was configured to only talk on the USB interface. Unless this is changed, it won't interface and send barcodes to the ESP board. To change settings on the GM67 there is an extensive document containing special QR codes that you can scan to apply settings. The documentation for all of the GM range of barcode scanners can be found [HERE](https://www.dropbox.com/scl/fo/87hz5h82k25j3p9k5u603/AJfkL6iYDATRGkLYJjuhUJE?rlkey=2fyvdir15kb1kj2ada1zkadqt&e=1&dl=0).
@@ -120,13 +124,16 @@ Assuming you have the GM67 like I do, you can scan the following QR code with th
 
 Other configuration options for the GM67 are available from within Home Assistant once the ESPHome device has been configured.
 
-So far, the GM67 has been very fast, accurate and reliable. 
+So far, the GM67 has been very fast, accurate and reliable during testing. 
 
 > [!TIP]
-> The GM67 seems to be good at reading codes from screens also and so you can open this page on your phone to be able to scan the above QR code easily. 
+> The GM67 is camera based and as such, seems to be good at reading codes from screens also. You can therefore open this page on your phone to be able to scan the above QR code easily. 
 
 #### ESPHome YAML
-An example ESPHome YAML configuration file can be found in this repository under [/esphome/example-esphome-gm67.yaml](esphome/example-esphome-gm67.yaml). Some of the sensors created in the example are disabled in HA by default but can be enabled to help with debugging. 
+An example ESPHome YAML configuration file can be found in this repository under [/esphome/example-esphome-gm67.yaml](esphome/example-esphome-gm67.yaml). This YAML file is an example only and unless you have the exact same hardware and wiring as in my prototype, you will likely need to amend it to get it working for you. 
+
+> [!TIP]
+> Some of the sensors created in the example are disabled in HA by default but can be enabled to help with debugging if required. 
 
 A number of configuration options for the GM67 are also contained within the example YAML file. These settings can be used to tailor the GM67's behaviour and can be set from within Home Assistant. The available config options are as follows:
 - Buzzer Volume: Sets the volume of the beep emitted when a barcode is scanned. Can also be used to turn off the buzzer.

@@ -219,7 +219,13 @@ Once installed, you need to add the integration under the integrations section o
 > Make sure to check the option for "Allow All Imports?" when adding the Pyscript integration. If you do not, our python script will not be able to load the needed python modules. Don't worry if you missed it or already have Pyscripts installed, you can check and set this option by going to the Pyscript integration page and clicking on "CONFIGURE".
 
 #### Add the python script under Pyscripts
-Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners with no python development experience. Don't worry though, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. 
+Pyscript can have a bit of a learning curve to set up and the documentation isn't be best for beginners with no python development experience. Don't worry though, if this is the first time you are using Pyscript in your HA instance, you can simply copy the "pyscript" folder and all of its contents and subfolders from this repository to your Home Assistant config folder. You also need to include the `pyscript/config.yaml` file into your Home Assistant configuration.yaml file. The below should be added to your Home Assistand configuration.yaml file:
+```yaml
+homeassistant:
+  packages:
+    pyscript: !include pyscript/config.yaml
+```
+You will find that you will already have the first line in your configuration.yaml file and you will need to add the others below it.
 
 If you already had Pyscript installed and running other python scripts, you should hopefully already understand the basics of how Pyscript is configured. You will need to copy the "pyscript/apps/barcode_lookup" folder and its contents from this repository under your existing "pyscript/apps" folder (or create one) in your Home Assistant config folder. You will also need to amend your "pyscript/config.yaml" file to include the definition and settings for this new Pyscript app. You can copy them from the ["pyscript/config.yaml"](pyscript/config.yaml) file in this repository.
 
